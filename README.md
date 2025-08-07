@@ -1,6 +1,6 @@
 # Legal Case Analyzer
 
-A sophisticated AI-powered legal case analyzer built with LangGraph and FastAPI. This system provides intelligent legal case analysis, research capabilities, and document processing with persistent conversation memory.
+Legal case analyzer agent based on the [CoLD case analyzer](https://github.com/Choice-of-Law-Dataverse/cold-case-analysis) but for an application in more fields of law.
 
 ## 🚀 Features
 
@@ -265,6 +265,15 @@ For support, questions, or feature requests:
 
 ## 🔮 Roadmap
 
+## Requirements
+
+### Backend
+Top Priority:
+- [ ] LangGraph running on FastAPI
+- [ ] Chat context memory with SQLite
+- [ ] Tools (e.g. Summarization, Number extraction, ...)
+- [ ] Implement tools from: https://github.com/Choice-of-Law-Dataverse/cold-case-analysis/tree/main/cold_case_analyzer_agent/streamlit/tools
+Nice to have:
 - [ ] Frontend web application
 - [ ] Additional legal research tools
 - [ ] Document upload and processing
