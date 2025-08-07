@@ -272,6 +272,7 @@ Top Priority:
 - [ ] LangGraph running on FastAPI
 - [ ] Chat context memory with SQLite
 - [ ] Tools (e.g. Summarization, Number extraction, ...)
+  - [ ] Law-Lookup (e.g. swiss law, etc.)
 - [ ] Implement tools from: https://github.com/Choice-of-Law-Dataverse/cold-case-analysis/tree/main/cold_case_analyzer_agent/streamlit/tools
 Nice to have:
 - [ ] Frontend web application
