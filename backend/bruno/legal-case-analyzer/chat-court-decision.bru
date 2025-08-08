@@ -1,0 +1,29 @@
+meta {
+  name: chat-court-decision
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8000/chat
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    //"message": "Hello, what can you do?",
+    //"message": "What did I ask you first?",
+    //"message": "Can you repeat your first answer, please?",
+    "message": "Can you access any specific tools and if so can you let me know which tools these are?",
+    "session_id": "test_0"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
