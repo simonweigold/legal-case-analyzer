@@ -44,7 +44,7 @@ class AgentState(TypedDict):
 
 
 # Initialize the language model
-model = ChatOpenAI(model="gpt-4o-mini")
+model = ChatOpenAI(model="gpt-4.1-nano")
 
 
 # Define tools
