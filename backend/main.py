@@ -4,6 +4,7 @@ import json
 import asyncio
 from typing import Annotated, Sequence, TypedDict, Dict, List
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
@@ -134,6 +135,15 @@ graph = workflow.compile()
 
 # Initialize FastAPI app
 app = FastAPI(title="Legal Case Analyzer API", version="1.0.0")
+
+# CORS for local frontend development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Development: allow all; tighten for production
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
