@@ -1,21 +1,92 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type React from "react";
+import {
+  AppBar,
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  Container,
+  CssBaseline,
+  Divider,
+  Drawer,
+  IconButton,
+  InputAdornment,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Stack,
+  TextField,
+  ThemeProvider,
+  Toolbar,
+  Tooltip,
+  Typography,
+  createTheme,
+} from "@mui/material";
+import {
+  ChatRounded as ChatIcon,
+  SendRounded as SendIcon,
+  Brightness4Rounded as DarkIcon,
+  Brightness7Rounded as LightIcon,
+  RestartAltRounded as ResetIcon,
+  DescriptionRounded as DocIcon,
+} from "@mui/icons-material";
 
-type ChatMessage = {
-  role: "user" | "assistant";
-  content: string;
-};
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
+function useMuiTheme(prefersDark: boolean) {
+  // Helper: read CSS var and return supported color (avoid oklch for MUI palette)
+  const getVar = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || undefined;
+  const sanitize = (value: string | undefined, fallback: string) => {
+    if (!value) return fallback;
+    const v = value.toLowerCase();
+    if (v.includes("oklch(")) return fallback; // MUI colorManipulator doesn't support OKLCH
+    return value;
+  };
+  const primary = sanitize(getVar("--primary"), prefersDark ? "#e5e7eb" : "#0f172a");
+  const background = sanitize(getVar("--background"), prefersDark ? "#0b0b0b" : "#fafafa");
+  const foreground = sanitize(getVar("--foreground"), prefersDark ? "#eeeeee" : "#111111");
+  const card = sanitize(getVar("--card"), prefersDark ? "#111111" : "#ffffff");
+
+  return createTheme({
+    palette: {
+      mode: prefersDark ? "dark" : "light",
+  primary: { main: primary },
+  background: { default: background, paper: card },
+  text: { primary: foreground },
+    },
+    shape: { borderRadius: 10 },
+    components: {
+      MuiPaper: {
+        styleOverrides: { root: { borderRadius: "var(--radius)" } },
+      },
+      MuiButton: {
+        defaultProps: { variant: "contained" },
+      },
+    },
+    typography: {
+      fontFamily: "var(--font-sans)",
+    },
+  });
+}
 
 export function App() {
+  const [dark, setDark] = useState(false);
+  const theme = useMuiTheme(dark);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (dark) root.classList.add("dark");
+    else root.classList.remove("dark");
+  }, [dark]);
+
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID().slice(0, 8));
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
-  const apiBase = useMemo(() => {
-    // Default to backend dev server; allow override via env at build time (Bun PUBLIC)
-    return (import.meta as any).env?.BUN_PUBLIC_API_BASE || "http://localhost:8000";
-  }, []);
+  const apiBase = useMemo(() => (import.meta as any).env?.BUN_PUBLIC_API_BASE || "http://localhost:8000", []);
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -29,24 +100,18 @@ export function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, session_id: sessionId }),
       });
-      if (!res.ok) {
-        throw new Error(`Request failed: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
       const data: { response: string; session_id: string } = await res.json();
       setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
     } catch (err: any) {
-      setMessages(prev => [
-        ...prev,
-        { role: "assistant", content: `Error: ${err?.message || String(err)}` },
-      ]);
+      setMessages(prev => [...prev, { role: "assistant", content: `Error: ${err?.message || String(err)}` }]);
     } finally {
       setLoading(false);
-      // refocus textarea for quick follow-up
       inputRef.current?.focus();
     }
   }, [apiBase, input, loading, sessionId]);
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       sendMessage();
@@ -54,9 +119,7 @@ export function App() {
   };
 
   const clearSession = async () => {
-    try {
-      await fetch(`${apiBase}/chat/history/${sessionId}`, { method: "DELETE" });
-    } catch {}
+    try { await fetch(`${apiBase}/chat/history/${sessionId}`, { method: "DELETE" }); } catch {}
     setMessages([]);
     setSessionId(crypto.randomUUID().slice(0, 8));
     setInput("");
@@ -64,82 +127,126 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="mx-auto max-w-3xl p-6">
-        <header className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Case Analyzer</h1>
-          <div className="flex items-center gap-2 text-sm text-slate-600">
-            <span className="hidden sm:inline">Session:</span>
-            <code className="rounded bg-white px-2 py-1">{sessionId}</code>
-            <button
-              onClick={clearSession}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1 text-slate-700 hover:bg-slate-100"
-            >
-              New
-            </button>
-          </div>
-        </header>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box sx={{ display: "flex", height: "100%" }}>
+        {/* Sidebar */}
+        <Drawer variant="permanent" PaperProps={{ sx: { width: 280, p: 2, borderRight: "1px solid var(--sidebar-border)", bgcolor: "var(--sidebar)" } }}>
+          <Stack spacing={2} sx={{ height: "100%" }}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Avatar><ChatIcon /></Avatar>
+              <Box>
+                <Typography fontWeight={700}>Case Analyzer</Typography>
+                <Typography variant="body2" color="text.secondary">Pitch Demo</Typography>
+              </Box>
+            </Stack>
 
-        <main className="space-y-4">
-          {/* Messages */}
-          <div className="space-y-3">
-            {messages.length === 0 && (
-              <p className="text-slate-600">Ask anything about a case. Press Ctrl+Enter to send.</p>
-            )}
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={
-                  "whitespace-pre-wrap rounded-lg border px-3 py-2 " +
-                  (m.role === "user"
-                    ? "border-blue-200 bg-blue-50"
-                    : "border-emerald-200 bg-emerald-50")
-                }
-              >
-                <div className="mb-1 text-xs uppercase tracking-wide text-slate-500">
-                  {m.role === "user" ? "You" : "Assistant"}
-                </div>
-                {m.content}
-              </div>
-            ))}
-          </div>
+            <Divider />
 
-          {/* Composer */}
-          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              rows={4}
-              placeholder="Paste case details or ask a question..."
-              className="w-full resize-y rounded-md border border-slate-200 p-2 outline-none focus:border-blue-400"
-            />
-            <div className="mt-2 flex items-center justify-between">
-              <div className="text-xs text-slate-500">Ctrl+Enter to send</div>
-              <button
-                onClick={sendMessage}
-                disabled={loading || input.trim().length === 0}
-                className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
-              >
-                {loading ? (
-                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="4" fill="none" opacity="0.25" />
-                    <path d="M22 12a10 10 0 0 1-10 10" stroke="white" strokeWidth="4" fill="none" />
-                  </svg>
-                ) : null}
-                Send
-              </button>
-            </div>
-          </div>
+            <Box>
+              <Typography variant="overline" color="text.secondary">Session</Typography>
+              <Stack direction="row" spacing={1} alignItems="center" mt={1}>
+                <Chip size="small" label={sessionId} sx={{ fontFamily: "var(--font-mono)" }} />
+                <Tooltip title="New Session">
+                  <IconButton color="primary" onClick={clearSession}><ResetIcon /></IconButton>
+                </Tooltip>
+              </Stack>
+            </Box>
 
-          {/* Note */}
-          <p className="text-xs text-slate-500">
-            Backend: <code>{apiBase}</code>
-          </p>
-        </main>
-      </div>
-    </div>
+            <Divider />
+
+            <Box>
+              <Typography variant="overline" color="text.secondary">Value Props</Typography>
+              <List>
+                <ListItem>
+                  <ListItemAvatar><Avatar variant="rounded"><DocIcon /></Avatar></ListItemAvatar>
+                  <ListItemText primary="Analyze Decisions" secondary="Extract issues, holdings, and risk" />
+                </ListItem>
+                <ListItem>
+                  <ListItemAvatar><Avatar variant="rounded"><DocIcon /></Avatar></ListItemAvatar>
+                  <ListItemText primary="Precedent Search" secondary="Surface relevant authorities" />
+                </ListItem>
+                <ListItem>
+                  <ListItemAvatar><Avatar variant="rounded"><DocIcon /></Avatar></ListItemAvatar>
+                  <ListItemText primary="Draft Insights" secondary="Concise, defensible summaries" />
+                </ListItem>
+              </List>
+            </Box>
+
+            <Box flexGrow={1} />
+
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="caption" color="text.secondary">Backend</Typography>
+              <Chip size="small" label={apiBase} sx={{ maxWidth: 160 }} />
+            </Stack>
+          </Stack>
+        </Drawer>
+
+        {/* Main content */}
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <AppBar position="sticky" color="transparent" elevation={0} sx={{ borderBottom: "1px solid var(--border)" }}>
+            <Toolbar>
+              <Typography variant="h6" sx={{ flex: 1 }}>Legal Case Conversation</Typography>
+              <Tooltip title={dark ? "Switch to light" : "Switch to dark"}>
+                <IconButton onClick={() => setDark(v => !v)} color="inherit">
+                  {dark ? <LightIcon /> : <DarkIcon />}
+                </IconButton>
+              </Tooltip>
+            </Toolbar>
+          </AppBar>
+
+          <Container maxWidth="md" sx={{ py: 3, flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 1, overflowY: "auto" }}>
+              {messages.length === 0 && (
+                <Typography color="text.secondary">Ask anything about a case. Press Ctrl+Enter to send.</Typography>
+              )}
+              {messages.map((m, i) => (
+                <Box key={i} sx={{
+                  border: "1px solid var(--border)",
+                  bgcolor: m.role === "user" ? "var(--accent)" : "var(--secondary)",
+                  color: "var(--accent-foreground)",
+                  p: 2,
+                  borderRadius: "var(--radius)",
+                }}>
+                  <Typography variant="caption" sx={{ opacity: 0.75, display: "block", mb: 0.5 }}>
+                    {m.role === "user" ? "You" : "Assistant"}
+                  </Typography>
+                  <Typography whiteSpace="pre-wrap">{m.content}</Typography>
+                </Box>
+              ))}
+            </Box>
+
+            <Stack direction="row" spacing={1}>
+              <TextField
+                fullWidth
+                inputRef={inputRef}
+                value={input}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setInput(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Paste case details or ask a question..."
+                multiline
+                minRows={2}
+                maxRows={6}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Button
+                        onClick={sendMessage}
+                        disabled={loading || input.trim().length === 0}
+                        endIcon={<SendIcon />}
+                      >
+                        Send
+                      </Button>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Stack>
+            <Typography variant="caption" color="text.secondary">Ctrl+Enter to send</Typography>
+          </Container>
+        </Box>
+      </Box>
+    </ThemeProvider>
   );
 }
 
