@@ -23,6 +23,7 @@ import {
   Tooltip,
   Typography,
   createTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   ChatRounded as ChatIcon,
@@ -31,6 +32,7 @@ import {
   Brightness7Rounded as LightIcon,
   RestartAltRounded as ResetIcon,
   DescriptionRounded as DocIcon,
+  MenuRounded as MenuIcon,
 } from "@mui/icons-material";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -79,6 +81,16 @@ export function App() {
     if (dark) root.classList.add("dark");
     else root.classList.remove("dark");
   }, [dark]);
+
+  // Responsive sidebar behavior
+  const drawerWidth = 280;
+  const drawerWidthSm = 240;
+  const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => {
+    // Close temporary drawer when switching to desktop
+    if (isDesktop) setSidebarOpen(false);
+  }, [isDesktop]);
 
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID().slice(0, 8));
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -131,7 +143,19 @@ export function App() {
       <CssBaseline />
       <Box sx={{ display: "flex", height: "100%" }}>
         {/* Sidebar */}
-        <Drawer variant="permanent" PaperProps={{ sx: { width: 280, p: 2, borderRight: "1px solid var(--sidebar-border)", bgcolor: "var(--sidebar)" } }}>
+        {isDesktop ? (
+          <Drawer
+            sx={{ width: drawerWidth, flexShrink: 0 }}
+            variant="permanent"
+            PaperProps={{
+              sx: {
+                width: drawerWidth,
+                p: 2,
+                borderRight: "1px solid var(--sidebar-border)",
+                bgcolor: "var(--sidebar)",
+              },
+            }}
+          >
           <Stack spacing={2} sx={{ height: "100%" }}>
             <Stack direction="row" spacing={1.5} alignItems="center">
               <Avatar><ChatIcon /></Avatar>
@@ -180,12 +204,82 @@ export function App() {
               <Chip size="small" label={apiBase} sx={{ maxWidth: 160 }} />
             </Stack>
           </Stack>
-        </Drawer>
+          </Drawer>
+        ) : (
+          <Drawer
+            variant="temporary"
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            ModalProps={{ keepMounted: true }}
+            PaperProps={{
+              sx: {
+                width: drawerWidthSm,
+                p: 2,
+                borderRight: "1px solid var(--sidebar-border)",
+                bgcolor: "var(--sidebar)",
+              },
+            }}
+          >
+            <Stack spacing={2} sx={{ height: "100%" }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Avatar><ChatIcon /></Avatar>
+                <Box>
+                  <Typography fontWeight={700}>Case Analyzer</Typography>
+                  <Typography variant="body2" color="text.secondary">Pitch Demo</Typography>
+                </Box>
+              </Stack>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="overline" color="text.secondary">Session</Typography>
+                <Stack direction="row" spacing={1} alignItems="center" mt={1}>
+                  <Chip size="small" label={sessionId} sx={{ fontFamily: "var(--font-mono)" }} />
+                  <Tooltip title="New Session">
+                    <IconButton color="primary" onClick={clearSession}><ResetIcon /></IconButton>
+                  </Tooltip>
+                </Stack>
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="overline" color="text.secondary">Value Props</Typography>
+                <List>
+                  <ListItem>
+                    <ListItemAvatar><Avatar variant="rounded"><DocIcon /></Avatar></ListItemAvatar>
+                    <ListItemText primary="Analyze Decisions" secondary="Extract issues, holdings, and risk" />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemAvatar><Avatar variant="rounded"><DocIcon /></Avatar></ListItemAvatar>
+                    <ListItemText primary="Choice of Law Issue" secondary="Identify the correct choice of law issue present in the case" />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemAvatar><Avatar variant="rounded"><DocIcon /></Avatar></ListItemAvatar>
+                    <ListItemText primary="Court's Position" secondary="Find the Ratio Decidendi, Obiter Dicta, and Dissenting Opinions" />
+                  </ListItem>
+                </List>
+              </Box>
+
+              <Box flexGrow={1} />
+
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="caption" color="text.secondary">Backend</Typography>
+                <Chip size="small" label={apiBase} sx={{ maxWidth: 160 }} />
+              </Stack>
+            </Stack>
+          </Drawer>
+        )}
 
         {/* Main content */}
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+  <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
           <AppBar position="sticky" color="transparent" elevation={0} sx={{ borderBottom: "1px solid var(--border)" }}>
             <Toolbar>
+              {!isDesktop && (
+                <IconButton edge="start" onClick={() => setSidebarOpen(true)} sx={{ mr: 1 }}>
+                  <MenuIcon />
+                </IconButton>
+              )}
               <Typography variant="h6" sx={{ flex: 1 }}>Legal Case Conversation</Typography>
               <Tooltip title={dark ? "Switch to light" : "Switch to dark"}>
                 <IconButton onClick={() => setDark(v => !v)} color="inherit">
@@ -195,7 +289,7 @@ export function App() {
             </Toolbar>
           </AppBar>
 
-          <Container maxWidth="md" sx={{ py: 3, flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+          <Container maxWidth="md" sx={{ py: { xs: 2, sm: 3 }, px: { xs: 2, sm: 3 }, flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
             <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 1, overflowY: "auto" }}>
               {messages.length === 0 && (
                 <Typography color="text.secondary">Ask anything about a case. Press Ctrl+Enter to send.</Typography>
