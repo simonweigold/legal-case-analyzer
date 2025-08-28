@@ -164,11 +164,11 @@ export function App() {
                 </ListItem>
                 <ListItem>
                   <ListItemAvatar><Avatar variant="rounded"><DocIcon /></Avatar></ListItemAvatar>
-                  <ListItemText primary="Precedent Search" secondary="Surface relevant authorities" />
+                  <ListItemText primary="Choice of Law Issue" secondary="Identify the correct choice of law issue present in the case" />
                 </ListItem>
                 <ListItem>
                   <ListItemAvatar><Avatar variant="rounded"><DocIcon /></Avatar></ListItemAvatar>
-                  <ListItemText primary="Draft Insights" secondary="Concise, defensible summaries" />
+                  <ListItemText primary="Court's Position" secondary="Find the Ratio Decidendi, Obiter Dicta, and Dissenting Opinions" />
                 </ListItem>
               </List>
             </Box>
