@@ -5,6 +5,7 @@ import asyncio
 from typing import Annotated, Sequence, TypedDict, Dict, List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uvicorn
 
@@ -31,6 +32,11 @@ class ChatResponse(BaseModel):
     session_id: str
 
 
+class StreamChatRequest(BaseModel):
+    message: str
+    session_id: str = "default"
+
+
 class ChatHistory(BaseModel):
     session_id: str
     messages: List[Dict[str, str]]
@@ -45,7 +51,7 @@ class AgentState(TypedDict):
 
 
 # Initialize the language model
-model = ChatOpenAI(model="gpt-4.1-nano")
+model = ChatOpenAI(model="gpt-4o-mini", streaming=True)
 
 
 # Define tools
@@ -191,6 +197,95 @@ async def chat_endpoint(request: ChatRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+
+
+@app.post("/chat/stream")
+async def stream_chat_endpoint(request: StreamChatRequest):
+    """
+    Send a message to the AI assistant and receive a streaming response.
+    Maintains conversation context per session.
+    """
+    async def generate_stream():
+        try:
+            session_id = request.session_id
+            user_message = request.message
+
+            # Get or initialize session history
+            if session_id not in session_storage:
+                session_storage[session_id] = []
+
+            # Add user message to session history
+            session_storage[session_id].append(HumanMessage(content=user_message))
+
+            # System prompt for legal case analysis context
+            system_prompt = SystemMessage(
+                "You are a helpful AI legal assistant specialized in analyzing legal cases. "
+                "You can help with case analysis, finding precedents, and providing legal insights. "
+                "Always provide thorough and professional responses while noting that your advice "
+                "should not replace consultation with qualified legal professionals."
+            )
+            
+            # Prepare messages for streaming
+            messages_for_llm = [system_prompt] + session_storage[session_id]
+            
+            # Stream directly from the model for token-by-token streaming
+            accumulated_content = ""
+            
+            async for chunk in model.astream(messages_for_llm):
+                if hasattr(chunk, 'content') and chunk.content:
+                    accumulated_content += chunk.content
+                    yield f"data: {json.dumps({'content': chunk.content, 'session_id': session_id, 'done': False, 'type': 'token'})}\n\n"
+                
+                # Handle tool calls if present
+                if hasattr(chunk, 'tool_calls') and chunk.tool_calls:
+                    for tool_call in chunk.tool_calls:
+                        tool_name = tool_call["name"]
+                        tool_message = f"Calling tool: {tool_name}"
+                        yield f"data: {json.dumps({'content': tool_message, 'session_id': session_id, 'done': False, 'type': 'tool'})}\n\n"
+                        
+                        # Execute the tool
+                        if tool_name in tools_by_name:
+                            tool_result = tools_by_name[tool_name].invoke(tool_call["args"])
+                            
+                            # Add tool message to session
+                            tool_message = ToolMessage(
+                                content=json.dumps(tool_result),
+                                name=tool_name,
+                                tool_call_id=tool_call["id"],
+                            )
+                            session_storage[session_id].append(AIMessage(content="", tool_calls=[tool_call]))
+                            session_storage[session_id].append(tool_message)
+                            
+                            result_message = f"Tool result: {tool_result}"
+                            yield f"data: {json.dumps({'content': result_message, 'session_id': session_id, 'done': False, 'type': 'tool_result'})}\n\n"
+                            
+                            # Continue streaming with tool result
+                            messages_for_llm = [system_prompt] + session_storage[session_id]
+                            async for follow_chunk in model.astream(messages_for_llm):
+                                if hasattr(follow_chunk, 'content') and follow_chunk.content:
+                                    accumulated_content += follow_chunk.content
+                                    yield f"data: {json.dumps({'content': follow_chunk.content, 'session_id': session_id, 'done': False, 'type': 'token'})}\n\n"
+
+            # Add the final AI response to session storage
+            if accumulated_content:
+                session_storage[session_id].append(AIMessage(content=accumulated_content))
+
+            # Send completion signal
+            yield f"data: {json.dumps({'content': '', 'session_id': session_id, 'done': True, 'type': 'done'})}\n\n"
+
+        except Exception as e:
+            # Send error in streaming format
+            yield f"data: {json.dumps({'error': f'Error processing request: {str(e)}', 'session_id': request.session_id, 'done': True, 'type': 'error'})}\n\n"
+
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Type": "text/event-stream",
+        }
+    )
 
 
 @app.get("/chat/history/{session_id}", response_model=ChatHistory)
