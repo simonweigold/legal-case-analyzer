@@ -367,24 +367,26 @@ export function InputSidebar({
 
   return (
     <>
-      {/* Menu Button */}
-      <IconButton
-        onClick={onToggle}
-        sx={{
-          position: 'fixed',
-          top: 16,
-          left: 16,
-          zIndex: 1201,
-          backgroundColor: 'primary.main',
-          color: 'primary.contrastText',
-          boxShadow: 3,
-          '&:hover': {
-            backgroundColor: 'primary.dark',
-          }
-        }}
-      >
-        <FileUpload />
-      </IconButton>
+      {/* Menu Button - only show when sidebar is closed */}
+      {!open && (
+        <IconButton
+          onClick={onToggle}
+          sx={{
+            position: 'fixed',
+            top: 16,
+            left: 16,
+            zIndex: 1201,
+            backgroundColor: 'primary.main',
+            color: 'primary.contrastText',
+            boxShadow: 3,
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            }
+          }}
+        >
+          <FileUpload />
+        </IconButton>
+      )}
 
       {/* Drawer */}
       <Drawer

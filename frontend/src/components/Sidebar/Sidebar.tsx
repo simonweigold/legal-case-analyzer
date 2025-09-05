@@ -344,23 +344,25 @@ export function Sidebar({
 
   return (
     <>
-      {/* Menu Button */}
-      <IconButton
-        onClick={onToggle}
-        sx={{
-          position: 'fixed',
-          top: 16,
-          right: 16,
-          zIndex: 1201,
-          backgroundColor: 'background.paper',
-          boxShadow: 2,
-          '&:hover': {
-            backgroundColor: 'action.hover',
-          }
-        }}
-      >
-        <MenuIcon />
-      </IconButton>
+      {/* Menu Button - only show when sidebar is closed */}
+      {!open && (
+        <IconButton
+          onClick={onToggle}
+          sx={{
+            position: 'fixed',
+            top: 16,
+            right: 16,
+            zIndex: 1201,
+            backgroundColor: 'background.paper',
+            boxShadow: 2,
+            '&:hover': {
+              backgroundColor: 'action.hover',
+            }
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
+      )}
 
       {/* Drawer */}
       <Drawer
