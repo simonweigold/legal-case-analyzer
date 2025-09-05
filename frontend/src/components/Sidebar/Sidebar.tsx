@@ -350,7 +350,7 @@ export function Sidebar({
         sx={{
           position: 'fixed',
           top: 16,
-          left: 16,
+          right: 16,
           zIndex: 1201,
           backgroundColor: 'background.paper',
           boxShadow: 2,
@@ -365,6 +365,7 @@ export function Sidebar({
       {/* Drawer */}
       <Drawer
         variant="temporary"
+        anchor="right"
         open={open}
         onClose={onToggle}
         ModalProps={{
