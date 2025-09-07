@@ -1,9 +1,12 @@
+"""
+Legal Case Analyzer FastAPI Backend with Supabase Integration
+"""
 import os
 from dotenv import find_dotenv, load_dotenv
 import json
 import asyncio
-from typing import Annotated, Sequence, TypedDict, Dict, List
-from fastapi import FastAPI, HTTPException
+from typing import Annotated, Sequence, TypedDict, Dict, List, Optional
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -20,24 +23,33 @@ from langchain_core.messages import ToolMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, END
 
+# Supabase integration imports
+from auth import AuthUser, get_current_user, get_optional_user
+from models import (
+    ChatRequest, ChatResponse, StreamChatRequest, ChatHistory,
+    ConversationModel, CreateConversationRequest, UpdateConversationRequest,
+    ConversationListResponse, MessageModel
+)
+from supabase_service import conversation_service, message_service
 
-# Pydantic models for API requests/responses
-class ChatRequest(BaseModel):
+
+# Legacy models for backward compatibility
+class LegacyChatRequest(BaseModel):
     message: str
     session_id: str = "default"
 
 
-class ChatResponse(BaseModel):
+class LegacyChatResponse(BaseModel):
     response: str
     session_id: str
 
 
-class StreamChatRequest(BaseModel):
+class LegacyStreamChatRequest(BaseModel):
     message: str
     session_id: str = "default"
 
 
-class ChatHistory(BaseModel):
+class LegacyChatHistory(BaseModel):
     session_id: str
     messages: List[Dict[str, str]]
 
@@ -154,13 +166,232 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"message": "Legal Case Analyzer API", "version": "1.0.0"}
+    return {"message": "Legal Case Analyzer API", "version": "1.0.0", "supabase": True}
 
 
-@app.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
+# ========================================
+# Supabase-enabled Authentication Endpoints
+# ========================================
+
+@app.get("/auth/user", response_model=MessageModel)
+async def get_user_profile(current_user: AuthUser = Depends(get_current_user)):
+    """Get the current user's profile information."""
+    return {
+        "user_id": current_user.user_id,
+        "email": current_user.email,
+        "metadata": current_user.metadata
+    }
+
+
+# ========================================
+# Supabase-enabled Conversation Management
+# ========================================
+
+@app.post("/conversations", response_model=ConversationModel)
+async def create_conversation(
+    request: CreateConversationRequest,
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """Create a new conversation for the authenticated user."""
+    try:
+        conversation = await conversation_service.create_conversation(
+            user=current_user,
+            title=request.title,
+            metadata=request.metadata
+        )
+        return conversation
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create conversation: {str(e)}")
+
+
+@app.get("/conversations", response_model=ConversationListResponse)
+async def list_conversations(
+    page: int = 1,
+    page_size: int = 20,
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """List all conversations for the authenticated user."""
+    try:
+        conversations = await conversation_service.get_conversations(
+            user=current_user,
+            page=page,
+            page_size=page_size
+        )
+        return ConversationListResponse(
+            conversations=conversations,
+            total=len(conversations),  # TODO: Implement proper count
+            page=page,
+            page_size=page_size
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get conversations: {str(e)}")
+
+
+@app.get("/conversations/{conversation_id}", response_model=ConversationModel)
+async def get_conversation(
+    conversation_id: str,
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """Get a specific conversation."""
+    try:
+        conversation = await conversation_service.get_conversation(conversation_id, current_user)
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        return conversation
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get conversation: {str(e)}")
+
+
+@app.put("/conversations/{conversation_id}", response_model=ConversationModel)
+async def update_conversation(
+    conversation_id: str,
+    request: UpdateConversationRequest,
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """Update a conversation."""
+    try:
+        conversation = await conversation_service.update_conversation(
+            conversation_id=conversation_id,
+            user=current_user,
+            title=request.title,
+            metadata=request.metadata
+        )
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        return conversation
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update conversation: {str(e)}")
+
+
+@app.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """Delete a conversation and all its messages."""
+    try:
+        success = await conversation_service.delete_conversation(conversation_id, current_user)
+        if not success:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        return {"message": "Conversation deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete conversation: {str(e)}")
+
+
+# ========================================
+# Supabase-enabled Chat Endpoints
+# ========================================
+
+@app.post("/conversations/{conversation_id}/chat", response_model=ChatResponse)
+async def chat_with_conversation(
+    conversation_id: str,
+    request: ChatRequest,
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """Send a message to an existing conversation."""
+    try:
+        # Verify the conversation exists and belongs to the user
+        conversation = await conversation_service.get_conversation(conversation_id, current_user)
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        # Get conversation history
+        messages_history = await message_service.get_messages(conversation_id)
+        
+        # Convert to LangChain messages
+        langchain_messages = []
+        for msg in messages_history:
+            if msg.role == "user":
+                langchain_messages.append(HumanMessage(content=msg.content))
+            elif msg.role == "assistant":
+                langchain_messages.append(AIMessage(content=msg.content))
+            elif msg.role == "system":
+                langchain_messages.append(SystemMessage(content=msg.content))
+
+        # Add the new user message
+        user_message = HumanMessage(content=request.message)
+        langchain_messages.append(user_message)
+
+        # Save user message to database
+        await message_service.add_message(
+            conversation_id=conversation_id,
+            role="user",
+            content=request.message
+        )
+
+        # Prepare input for the graph
+        inputs = {"messages": langchain_messages}
+
+        # Run the graph and collect the final response
+        final_state = None
+        for chunk in graph.stream(inputs, stream_mode="values"):
+            final_state = chunk
+
+        if final_state and final_state["messages"]:
+            # Get the last AI message
+            last_message = final_state["messages"][-1]
+            if isinstance(last_message, AIMessage):
+                ai_response = last_message.content
+                
+                # Save AI response to database
+                await message_service.add_message(
+                    conversation_id=conversation_id,
+                    role="assistant",
+                    content=ai_response
+                )
+                
+                return ChatResponse(response=ai_response, conversation_id=conversation_id)
+            
+        # Save fallback response
+        fallback_response = "I apologize, but I couldn't generate a proper response. Please try again."
+        await message_service.add_message(
+            conversation_id=conversation_id,
+            role="assistant",
+            content=fallback_response
+        )
+        
+        return ChatResponse(response=fallback_response, conversation_id=conversation_id)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing chat: {str(e)}")
+
+
+@app.get("/conversations/{conversation_id}/messages", response_model=List[MessageModel])
+async def get_conversation_messages(
+    conversation_id: str,
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """Get all messages for a conversation."""
+    try:
+        # Verify the conversation exists and belongs to the user
+        conversation = await conversation_service.get_conversation(conversation_id, current_user)
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        messages = await message_service.get_messages(conversation_id)
+        return messages
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get messages: {str(e)}")
+
+
+# ========================================
+# Legacy Endpoints (for backward compatibility)
+# ========================================
+
+@app.post("/chat", response_model=LegacyChatResponse)
+async def chat_endpoint(request: LegacyChatRequest):
     """
-    Send a message to the AI assistant and receive a response.
+    LEGACY: Send a message to the AI assistant and receive a response.
     Maintains conversation context per session.
     """
     try:
@@ -191,16 +422,16 @@ async def chat_endpoint(request: ChatRequest):
                 # Update session storage with the complete conversation
                 session_storage[session_id] = final_state["messages"]
                 
-                return ChatResponse(response=ai_response, session_id=session_id)
+                return LegacyChatResponse(response=ai_response, session_id=session_id)
             
-        return ChatResponse(response="I apologize, but I couldn't generate a proper response. Please try again.", session_id=session_id)
+        return LegacyChatResponse(response="I apologize, but I couldn't generate a proper response. Please try again.", session_id=session_id)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
 
 @app.post("/chat/stream")
-async def stream_chat_endpoint(request: StreamChatRequest):
+async def stream_chat_endpoint(request: LegacyStreamChatRequest):
     """
     Send a message to the AI assistant and receive a streaming response.
     Maintains conversation context per session.
@@ -288,13 +519,13 @@ async def stream_chat_endpoint(request: StreamChatRequest):
     )
 
 
-@app.get("/chat/history/{session_id}", response_model=ChatHistory)
+@app.get("/chat/history/{session_id}", response_model=LegacyChatHistory)
 async def get_chat_history(session_id: str):
     """
-    Retrieve chat history for a specific session.
+    LEGACY: Retrieve chat history for a specific session.
     """
     if session_id not in session_storage:
-        return ChatHistory(session_id=session_id, messages=[])
+        return LegacyChatHistory(session_id=session_id, messages=[])
     
     messages = []
     for msg in session_storage[session_id]:
@@ -305,7 +536,7 @@ async def get_chat_history(session_id: str):
         elif isinstance(msg, ToolMessage):
             messages.append({"role": "tool", "content": f"Tool: {msg.name} - {msg.content}"})
     
-    return ChatHistory(session_id=session_id, messages=messages)
+    return LegacyChatHistory(session_id=session_id, messages=messages)
 
 
 @app.delete("/chat/history/{session_id}")
@@ -330,6 +561,6 @@ async def list_sessions():
 
 if __name__ == "__main__":
     print("Starting Legal Case Analyzer API...")
-    print("API will be available at: http://localhost:8000")
-    print("API documentation at: http://localhost:8000/docs")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    print("API will be available at: http://localhost:1")
+    print("API documentation at: http://localhost:8001/docs")
+    uvicorn.run(app, host="0.0.0.0", port=8001)

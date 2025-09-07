@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "legal-case-analyzer",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

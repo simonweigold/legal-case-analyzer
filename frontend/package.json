@@ -16,7 +16,8 @@
   "@mui/material": "^6",
   "@mui/icons-material": "^6",
   "@emotion/react": "^11",
-  "@emotion/styled": "^11"
+  "@emotion/styled": "^11",
+  "@supabase/supabase-js": "^2.39.0"
   },
   "devDependencies": {
     "@types/react": "^19",

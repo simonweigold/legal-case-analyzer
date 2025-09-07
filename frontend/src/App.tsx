@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { CssBaseline, ThemeProvider, Box } from "@mui/material";
 import { useTheme } from "./hooks/useTheme";
 import { useChat } from "./hooks/useChat";
+import { useAuth } from "./contexts/AuthContext";
 import { Sidebar } from "./components/Sidebar";
 import { InputSidebar } from "./components/InputSidebar";
 import { ChatInterface } from "./components/ChatInterface";
+import { AuthForm } from "./components/AuthForm";
 import type { AppConfig } from "./types";
 
 const config: AppConfig = {
-  apiBase: (import.meta as any).env?.BUN_PUBLIC_API_BASE || "http://localhost:8000",
+  apiBase: (import.meta as any).env?.BUN_PUBLIC_API_BASE || "http://localhost:8001",
   title: "Legal Case Analyzer",
   description: "AI-powered legal document analysis"
 };
@@ -18,11 +20,34 @@ function App() {
   const [inputSidebarOpen, setInputSidebarOpen] = useState(true); // Start open so you can see it
   
   const { theme, darkMode, toggleDarkMode } = useTheme();
+  const { user, loading: authLoading } = useAuth();
   const { state, actions, inputRef } = useChat({
     apiBase: config.apiBase,
     onError: (error) => console.error('Chat error:', error),
     onSuccess: () => console.log('Message sent successfully')
   });
+
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          Loading...
+        </Box>
+      </ThemeProvider>
+    );
+  }
+
+  // Show login form if user is not authenticated
+  if (!user) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthForm />
+      </ThemeProvider>
+    );
+  }
 
   const handleSidebarToggle = () => setSidebarOpen(!sidebarOpen);
   const handleInputSidebarToggle = () => setInputSidebarOpen(!inputSidebarOpen);
@@ -47,6 +72,7 @@ function App() {
     setInputSidebarOpen(false);
   };
 
+  // Main app interface for authenticated users
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
