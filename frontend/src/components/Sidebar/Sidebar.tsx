@@ -43,7 +43,7 @@ export interface SidebarProps {
   onToggle: () => void;
   darkMode: boolean;
   onThemeToggle: () => void;
-  sessionId: string;
+  sessionId: string | null;
   onClearSession: () => void;
   isStreaming: boolean;
   loading: boolean;
@@ -382,7 +382,7 @@ export function Sidebar({
           <Divider />
           <Box sx={{ p: 2 }}>
             <Typography variant="caption" color="text.secondary" display="block">
-              Session: {sessionId.slice(0, 8)}...
+              Session: {sessionId && typeof sessionId === 'string' ? sessionId.slice(0, 8) + '...' : 'New Session'}
             </Typography>
             {(loading || isStreaming) && (
               <Chip 

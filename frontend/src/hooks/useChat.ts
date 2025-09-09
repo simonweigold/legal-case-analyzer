@@ -252,7 +252,7 @@ export function useChat() {
     isLoading,
     isStreaming,
     error,
-    sessionId: conversationId || '',
+    sessionId: conversationId || null,
     conversationId,
     conversations,
     sendMessage,
