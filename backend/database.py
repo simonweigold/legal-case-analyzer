@@ -8,8 +8,13 @@ import os
 # Database URL - using SQLite with aiosqlite for async support
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./legal_analyzer.db")
 
-# Create async engine
-engine = create_async_engine(DATABASE_URL, echo=True)
+# Create async engine with connection pooling
+engine = create_async_engine(
+    DATABASE_URL, 
+    echo=False,
+    pool_pre_ping=True,
+    pool_recycle=300
+)
 
 # Create async session maker
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)

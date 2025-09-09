@@ -15,10 +15,10 @@ class Settings:
     MODEL_NAME = "gpt-4o-mini"
     STREAMING = True
     
-    # CORS Configuration
-    CORS_ORIGINS = ["*"]  # Development: allow all; tighten for production
-    CORS_CREDENTIALS = False
-    CORS_METHODS = ["*"]
+    # CORS Configuration - Optimized for development
+    CORS_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"]
+    CORS_CREDENTIALS = True
+    CORS_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
     CORS_HEADERS = ["*"]
     
     # Database Configuration

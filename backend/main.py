@@ -8,6 +8,10 @@ import uvicorn
 # Load environment variables first
 load_dotenv(find_dotenv())
 
+# Setup logging
+from logging_config import setup_logging
+logger = setup_logging()
+
 # Import configuration
 from config import settings
 
@@ -41,6 +45,33 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"message": settings.API_TITLE, "version": settings.API_VERSION}
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring."""
+    try:
+        # Test database connection
+        from database import async_session_maker
+        from sqlalchemy import text
+        
+        async with async_session_maker() as session:
+            await session.execute(text("SELECT 1"))
+        
+        return {
+            "status": "healthy",
+            "service": settings.API_TITLE,
+            "version": settings.API_VERSION,
+            "database": "connected"
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "service": settings.API_TITLE,
+            "version": settings.API_VERSION,
+            "database": "disconnected",
+            "error": str(e)
+        }
 
 # Import and setup after app creation to avoid circular imports
 def setup_routes_and_dependencies():
