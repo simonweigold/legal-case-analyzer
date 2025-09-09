@@ -31,7 +31,6 @@ import {
   Logout,
   AccountCircle,
   MoreVert,
-  FilterList,
   Delete,
   Edit
 } from '@mui/icons-material';
@@ -54,21 +53,6 @@ export interface SidebarProps {
 }
 
 const DRAWER_WIDTH = 320;
-
-const getCategoryInfo = (category?: string) => {
-  switch (category) {
-    case 'contract':
-      return { label: 'Contract', color: '#2196f3' };
-    case 'litigation':
-      return { label: 'Litigation', color: '#f44336' };
-    case 'compliance':
-      return { label: 'Compliance', color: '#ff9800' };
-    case 'research':
-      return { label: 'Research', color: '#4caf50' };
-    default:
-      return { label: 'General', color: '#9e9e9e' };
-  }
-};
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -97,17 +81,15 @@ export function Sidebar({
 }: SidebarProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
-  // Filter conversations based on search and category
+  // Filter conversations based on search
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          conv.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || conv.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   const handleNewChat = () => {
@@ -236,26 +218,12 @@ export function Sidebar({
             }}
             sx={{ mb: 1 }}
           />
-          
-          {/* Category Filter */}
-          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-            {['all', 'contract', 'litigation', 'compliance', 'research'].map((category) => (
-              <Chip
-                key={category}
-                label={category === 'all' ? 'All' : category.charAt(0).toUpperCase() + category.slice(1)}
-                size="small"
-                variant={selectedCategory === category ? 'filled' : 'outlined'}
-                onClick={() => setSelectedCategory(category)}
-                sx={{ fontSize: '0.75rem' }}
-              />
-            ))}
-          </Box>
+
         </Box>
 
         {/* Conversations List */}
         <List sx={{ px: 1, flexGrow: 1, maxHeight: 'calc(100vh - 320px)', overflow: 'auto' }}>
           {filteredConversations.map((conversation) => {
-            const categoryInfo = getCategoryInfo(conversation.category);
             return (
               <ListItem key={conversation.id} disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton
@@ -276,7 +244,6 @@ export function Sidebar({
                         width: 8,
                         height: 8,
                         borderRadius: '50%',
-                        backgroundColor: categoryInfo.color,
                         mr: 1,
                         flexShrink: 0
                       }}
@@ -335,8 +302,6 @@ export function Sidebar({
                         sx={{
                           fontSize: '0.6rem',
                           height: 20,
-                          color: categoryInfo.color,
-                          borderColor: categoryInfo.color,
                           mr: 1
                         }}
                       />
