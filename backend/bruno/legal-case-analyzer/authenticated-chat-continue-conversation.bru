@@ -1,0 +1,39 @@
+meta {
+  name: authenticated-chat-continue-conversation
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:8000/chat/
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "Can you provide specific examples of contract formation elements?",
+    "conversation_id": {{conversation_id}}
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+tests {
+  test("should continue existing conversation", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.have.property('response');
+    expect(res.getBody()).to.have.property('conversation_id');
+    expect(res.getBody().conversation_id).to.equal(bru.getEnvVar('conversation_id'));
+  });
+}

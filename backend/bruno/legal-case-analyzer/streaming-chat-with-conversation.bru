@@ -1,0 +1,41 @@
+meta {
+  name: streaming-chat-with-conversation
+  type: http
+  seq: 13
+}
+
+post {
+  url: http://localhost:8000/chat/stream
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "Can you analyze this legal case and use your tools to provide detailed insights about precedents and legal principles involved?",
+    "conversation_title": "Streaming Legal Analysis"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+notes {
+  This endpoint returns a streaming response with Server-Sent Events (SSE).
+  The response will contain multiple data chunks as the AI generates the response.
+  
+  Expected response format:
+  data: {"content": "partial response", "conversation_id": 1, "done": false, "type": "token"}
+  data: {"content": "Calling tool: analyze_legal_case", "conversation_id": 1, "done": false, "type": "tool"}
+  data: {"content": "Tool result: ...", "conversation_id": 1, "done": false, "type": "tool_result"}
+  data: {"content": "", "conversation_id": 1, "done": true, "type": "done"}
+}

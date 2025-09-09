@@ -1,0 +1,39 @@
+meta {
+  name: get-conversation-with-messages
+  type: http
+  seq: 11
+}
+
+get {
+  url: http://localhost:8000/conversations/{{conversation_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+settings {
+  encodeUrl: true
+}
+
+tests {
+  test("should get conversation with messages", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.have.property('id');
+    expect(res.getBody()).to.have.property('title');
+    expect(res.getBody()).to.have.property('messages');
+    expect(res.getBody().messages).to.be.an('array');
+    
+    if (res.getBody().messages.length > 0) {
+      expect(res.getBody().messages[0]).to.have.property('role');
+      expect(res.getBody().messages[0]).to.have.property('content');
+      expect(res.getBody().messages[0]).to.have.property('created_at');
+    }
+  });
+}

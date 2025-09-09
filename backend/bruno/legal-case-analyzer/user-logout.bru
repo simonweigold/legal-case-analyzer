@@ -1,0 +1,32 @@
+meta {
+  name: user-logout
+  type: http
+  seq: 14
+}
+
+post {
+  url: http://localhost:8000/auth/jwt/logout
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+settings {
+  encodeUrl: true
+}
+
+tests {
+  test("should logout user successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    
+    // Clear the auth token after logout
+    bru.setEnvVar('auth_token', '');
+  });
+}

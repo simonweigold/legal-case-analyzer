@@ -1,0 +1,36 @@
+meta {
+  name: user-register
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:8000/auth/register
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "user@example.com",
+    "password": "securePassword123!"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+tests {
+  test("should register user successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody()).to.have.property('id');
+    expect(res.getBody()).to.have.property('email');
+    expect(res.getBody().email).to.equal('user@example.com');
+    expect(res.getBody().is_active).to.equal(true);
+  });
+}
