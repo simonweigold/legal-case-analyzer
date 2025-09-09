@@ -1,15 +1,46 @@
 // App.tsx
-import React, { useState } from 'react';
-import { ThemeProvider, CssBaseline, Box, Alert, Snackbar } from '@mui/material';
+import React, { useState, useEffect } from 'react';
 import { ChatInterface } from './components/ChatInterface';
 import { Sidebar } from './components/Sidebar';
 import { InputSidebar } from './components/InputSidebar';
+import { Navbar } from './components/Navbar';
 import { useChat } from './hooks/useChat';
 import { useTheme } from './hooks/useTheme';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { cn } from './lib/utils';
+
+// Error Notification Component
+function ErrorNotification({ error, onClose }: { error: string | null; onClose: () => void }) {
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(onClose, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, onClose]);
+
+  if (!error) return null;
+
+  return (
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
+      <div className="bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg border border-destructive/20">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">{error}</span>
+          <button
+            onClick={onClose}
+            className="ml-3 text-destructive-foreground/80 hover:text-destructive-foreground"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AppContent() {
-  const { theme, darkMode, toggleDarkMode } = useTheme();
+  const { darkMode, toggleDarkMode } = useTheme();
   const {
     messages,
     isLoading,
@@ -26,19 +57,17 @@ function AppContent() {
   
   const { isAuthenticated, error: authError } = useAuth();
   
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [inputSidebarOpen, setInputSidebarOpen] = useState(false);
   const [errorSnackbar, setErrorSnackbar] = useState<string | null>(null);
   const [input, setInput] = useState('');
 
-  // Show error in snackbar
-  React.useEffect(() => {
+  // Show error in notification
+  useEffect(() => {
     if (error) {
       setErrorSnackbar(error);
     }
   }, [error]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (authError) {
       setErrorSnackbar(authError);
     }
@@ -54,7 +83,6 @@ function AppContent() {
     }
 
     sendMessage(formattedInput, source, filename);
-    setInputSidebarOpen(false); // Close input sidebar after submission
   };
 
   const handleSendMessage = async () => {
@@ -66,7 +94,6 @@ function AppContent() {
 
   const handleLoadConversation = (conversationId: string) => {
     loadConversation(conversationId);
-    setSidebarOpen(false); // Close sidebar on mobile after loading
   };
 
   const handleDeleteConversation = (conversationId: string) => {
@@ -96,68 +123,64 @@ function AppContent() {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-        {/* Input Sidebar */}
-        <InputSidebar
-          open={inputSidebarOpen}
-          onToggle={() => setInputSidebarOpen(!inputSidebarOpen)}
-          onTextSubmit={handleTextSubmit}
-          isProcessing={isLoading || isStreaming}
-        />
-        
-        {/* Main Content */}
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            minWidth: 0, // Important for flex children
-            position: 'relative',
-          }}
-        >
+    <div className={cn("h-screen", darkMode && "dark")}>
+      {/* Grid layout container */}
+      <div className="grid grid-cols-[auto_1fr_auto] grid-rows-[auto_1fr] h-full bg-background text-foreground">
+        {/* Top navbar spanning all columns */}
+        <header className="col-span-3 border-b border-border">
+          <Navbar
+            darkMode={darkMode}
+            onThemeToggle={toggleDarkMode}
+            sessionId={sessionId}
+            onClearSession={clearSession}
+            isStreaming={isStreaming}
+            loading={isLoading}
+          />
+        </header>
+
+        {/* Left sidebar - Input */}
+        <aside className="border-r border-border bg-sidebar">
+          <InputSidebar
+            open={true}
+            onToggle={() => {}}
+            onTextSubmit={handleTextSubmit}
+            isProcessing={isLoading || isStreaming}
+          />
+        </aside>
+
+        {/* Main content area */}
+        <main className="min-w-0 bg-background">
           <ChatInterface
             state={chatState}
             actions={chatActions}
             inputRef={inputRef}
           />
-        </Box>
+        </main>
 
-        {/* Right Sidebar */}
-        <Sidebar
-          open={sidebarOpen}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
-          darkMode={darkMode}
-          onThemeToggle={toggleDarkMode}
-          sessionId={sessionId}
-          onClearSession={clearSession}
-          isStreaming={isStreaming}
-          loading={isLoading}
-          conversations={conversations}
-          onLoadConversation={handleLoadConversation}
-          onDeleteConversation={handleDeleteConversation}
-        />
-      </Box>
+        {/* Right sidebar - Conversations */}
+        <aside className="border-l border-border bg-sidebar">
+          <Sidebar
+            open={true}
+            onToggle={() => {}} 
+            darkMode={darkMode}
+            onThemeToggle={toggleDarkMode}
+            sessionId={sessionId}
+            onClearSession={clearSession}
+            isStreaming={isStreaming}
+            loading={isLoading}
+            conversations={conversations}
+            onLoadConversation={handleLoadConversation}
+            onDeleteConversation={handleDeleteConversation}
+          />
+        </aside>
+      </div>
 
-      {/* Error Snackbar */}
-      <Snackbar
-        open={!!errorSnackbar}
-        autoHideDuration={6000}
+      {/* Error Notification */}
+      <ErrorNotification
+        error={errorSnackbar}
         onClose={() => setErrorSnackbar(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setErrorSnackbar(null)}
-          severity="error"
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
-          {errorSnackbar}
-        </Alert>
-      </Snackbar>
-    </ThemeProvider>
+      />
+    </div>
   );
 }
 

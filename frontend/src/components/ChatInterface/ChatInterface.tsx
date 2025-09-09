@@ -1,12 +1,18 @@
 // components/ChatInterface/ChatInterface.tsx
 import React, { useEffect, useRef } from 'react';
-import { Box } from '@mui/material';
 import { MessageList } from './MessageList';
 import { InputArea } from './InputArea';
-import type { ChatState, ChatActions } from '../../hooks/useChat';
+import type { ChatState } from '../../hooks/useChat';
+
+export interface ChatActions {
+  setInput: (value: string) => void;
+  sendMessage: () => void;
+  clearSession: () => void;
+  stopGeneration: () => void;
+}
 
 export interface ChatInterfaceProps {
-  state: ChatState;
+  state: ChatState & { input: string };
   actions: ChatActions;
   inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
 }
@@ -17,40 +23,33 @@ export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [state.messages, state.loading, state.isStreaming]);
+  }, [state.messages, state.isLoading, state.isStreaming]);
 
   return (
-    <Box
-      sx={{
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: 'background.default'
-      }}
-    >
+    <div className="h-full flex flex-col bg-background">
       {/* Messages Area */}
-      <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div className="flex-1 overflow-hidden flex flex-col">
         <MessageList 
           messages={state.messages}
-          loading={state.loading}
+          loading={state.isLoading}
           isStreaming={state.isStreaming}
         />
         
         {/* Scroll anchor */}
         <div ref={messagesEndRef} />
-      </Box>
+      </div>
 
       {/* Input Area */}
-      <Box sx={{ p: 2, pt: 1 }}>
+      <div className="p-4 pt-2 border-t border-border">
         <InputArea
           input={state.input}
           onInputChange={actions.setInput}
           onSend={actions.sendMessage}
-          loading={state.loading}
+          loading={state.isLoading}
           isStreaming={state.isStreaming}
           inputRef={inputRef}
         />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
