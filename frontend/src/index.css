@@ -32,6 +32,16 @@
 	--sidebar-accent-foreground: oklch(0.2050 0 0);
 	--sidebar-border: oklch(0.9220 0 0);
 	--sidebar-ring: oklch(0.7080 0 0);
+	
+	/* Material-UI compatible color equivalents */
+	--mui-background: #bbbbbb;
+	--mui-foreground: #404040;
+	--mui-card: #bbbbbb;
+	--mui-primary: #404040;
+	--mui-secondary: #f7f7f7;
+	--mui-border: #f7f7f7;
+	--mui-muted-foreground: #8e8e8e;
+	
 	--font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 	--font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -81,6 +91,16 @@
 	--sidebar-accent-foreground: oklch(0.9850 0 0);
 	--sidebar-border: oklch(0.2750 0 0);
 	--sidebar-ring: oklch(0.4390 0 0);
+	
+	/* Material-UI compatible color equivalents for dark mode */
+	--mui-background: #252525;
+	--mui-foreground: #fcfcfc;
+	--mui-card: #353535;
+	--mui-primary: #ebebeb;
+	--mui-secondary: #454545;
+	--mui-border: #474747;
+	--mui-muted-foreground: #b5b5b5;
+	
 	--font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 	--font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;

@@ -1,6 +1,14 @@
 // hooks/useTheme.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createTheme, useMediaQuery } from '@mui/material';
+
+// Helper function to get CSS variable value
+const getCSSVariable = (variable: string): string => {
+  if (typeof window !== 'undefined') {
+    return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+  }
+  return '';
+};
 
 export function useTheme() {
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
@@ -19,47 +27,78 @@ export function useTheme() {
     }
   }, [darkMode]);
 
-  const theme = createTheme({
+  // Create theme with CSS variables designed for Material-UI compatibility
+  const theme = useMemo(() => {
+    // Get Material-UI compatible CSS variable values
+    const background = getCSSVariable('--mui-background') || (darkMode ? '#252525' : '#bbbbbb');
+    const foreground = getCSSVariable('--mui-foreground') || (darkMode ? '#fcfcfc' : '#404040');
+    const card = getCSSVariable('--mui-card') || (darkMode ? '#353535' : '#bbbbbb');
+    const primary = getCSSVariable('--mui-primary') || (darkMode ? '#ebebeb' : '#404040');
+    const secondary = getCSSVariable('--mui-secondary') || (darkMode ? '#454545' : '#f7f7f7');
+    const border = getCSSVariable('--mui-border') || (darkMode ? '#474747' : '#f7f7f7');
+    const mutedForeground = getCSSVariable('--mui-muted-foreground') || (darkMode ? '#b5b5b5' : '#8e8e8e');
+
+    return createTheme({
     palette: {
       mode: darkMode ? "dark" : "light",
       primary: { 
-        main: "#1976d2"
+        main: primary
       },
       secondary: {
-        main: "#dc004e"
+        main: secondary
       },
       background: { 
-        default: darkMode ? "#121212" : "#fafafa",
-        paper: darkMode ? "#1e1e1e" : "#ffffff"
+        default: background,
+        paper: card
       },
+      text: {
+        primary: foreground,
+        secondary: mutedForeground
+      },
+      divider: border,
     },
-    shape: { borderRadius: 8 },
+    shape: { borderRadius: 10 }, // Using number for MUI, CSS var applied in component overrides
     components: {
       MuiPaper: {
         styleOverrides: { 
           root: { 
-            borderRadius: 8,
-            border: `1px solid ${darkMode ? '#333' : '#e0e0e0'}`
+            borderRadius: "var(--radius)",
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--card)",
+            color: "var(--card-foreground)"
           } 
         },
       },
       MuiButton: {
         defaultProps: { variant: "contained" },
+        styleOverrides: {
+          root: {
+            borderRadius: "var(--radius)",
+          }
+        }
+      },
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: "var(--input)",
+              borderRadius: "var(--radius)",
+              '& fieldset': {
+                borderColor: "var(--border)",
+              },
+              '&:hover fieldset': {
+                borderColor: "var(--ring)",
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: "var(--ring)",
+              },
+            },
+          },
+        },
       },
     },
   });
-
-  // Set CSS variables for theme
-  useEffect(() => {
-    document.documentElement.style.setProperty(
-      "--background-color",
-      theme.palette.background.default
-    );
-    document.documentElement.style.setProperty(
-      "--text-color",
-      theme.palette.text.primary
-    );
-  }, [theme]);
+  }, [darkMode]); // Recreate theme when darkMode changes
 
   const toggleDarkMode = () => setDarkMode((prev: boolean) => !prev);
 
