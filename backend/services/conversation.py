@@ -11,7 +11,7 @@ class ConversationService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_conversation(self, user_id: uuid.UUID, title: str) -> Conversation:
+    async def create_conversation(self, user_id: uuid.UUID, title: str, category: Optional[str] = None) -> Conversation:
         """Create a new conversation for a user."""
         conversation = Conversation(user_id=user_id, title=title)
         self.db.add(conversation)
@@ -50,6 +50,31 @@ class ConversationService:
             await self.db.commit()
             return True
         return False
+
+    async def update_conversation(
+        self, 
+        conversation_id: int, 
+        user_id: uuid.UUID, 
+        title: Optional[str] = None, 
+        category: Optional[str] = None
+    ) -> Optional[Conversation]:
+        """Update a conversation's title or category."""
+        result = await self.db.execute(
+            select(Conversation)
+            .where(Conversation.id == conversation_id, Conversation.user_id == user_id)
+        )
+        conversation = result.scalar_one_or_none()
+        
+        if conversation:
+            if title is not None:
+                conversation.title = title
+            if category is not None:
+                conversation.category = category
+            
+            await self.db.commit()
+            await self.db.refresh(conversation)
+            return conversation
+        return None
 
     async def add_message_to_conversation(
         self, 

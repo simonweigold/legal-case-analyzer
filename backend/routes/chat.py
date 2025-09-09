@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
 from schemas.chat import ChatRequest, ChatResponse, StreamChatRequest, ChatHistory
-from schemas.conversation import ChatRequestWithConversation, ChatResponseWithConversation
+from schemas.conversation import ChatRequestWithConversation, ChatResponseWithConversation, ConversationResponse, MessageResponse
 from auth import current_active_user
 from models.database import User
 from database import get_async_session
@@ -173,7 +173,7 @@ async def stream_chat_with_conversation(
             async for chunk in model.astream(messages_for_llm):
                 if hasattr(chunk, 'content') and chunk.content:
                     accumulated_content += chunk.content
-                    yield f"data: {json.dumps({'content': chunk.content, 'conversation_id': conversation_id, 'done': False, 'type': 'token'})}\n\n"
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': chunk.content, 'conversation_id': conversation_id})}\n\n"
                 
                 # Handle tool calls if present
                 if hasattr(chunk, 'tool_calls') and chunk.tool_calls:
@@ -207,7 +207,7 @@ async def stream_chat_with_conversation(
                 )
 
             # Send completion signal
-            yield f"data: {json.dumps({'content': '', 'conversation_id': conversation_id, 'done': True, 'type': 'done'})}\n\n"
+            yield f"data: {json.dumps({'type': 'complete', 'data': {'response': accumulated_content, 'conversation_id': conversation_id, 'message_id': None}})}\n\n"
 
         except Exception as e:
             # Send error in streaming format
@@ -308,3 +308,210 @@ async def list_sessions_legacy():
     """
     sessions = get_all_sessions()
     return {"sessions": sessions, "count": len(sessions)}
+
+
+# Conversation Management Endpoints
+@router.get("/conversations")
+async def get_conversations(
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
+):
+    """
+    Get all conversations for the current user.
+    """
+    try:
+        conversation_service = ConversationService(db)
+        conversations = await conversation_service.get_user_conversations(user.id)
+        
+        # Convert to response format
+        conversation_responses = []
+        for conv in conversations:
+            # Get message count and last message
+            messages = await conversation_service.get_conversation_messages(conv.id)
+            last_message = messages[-1].content if messages else ""
+            
+            conversation_responses.append({
+                "id": str(conv.id),
+                "user_id": str(conv.user_id),
+                "title": conv.title,
+                "created_at": conv.created_at.isoformat(),
+                "updated_at": conv.updated_at.isoformat(),
+                "category": getattr(conv, 'category', None),
+                "is_active": True,
+                "messageCount": len(messages),
+                "lastMessage": last_message[:100] + "..." if len(last_message) > 100 else last_message,
+                "lastUpdated": conv.updated_at.isoformat()
+            })
+        
+        return conversation_responses
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching conversations: {str(e)}")
+
+
+@router.get("/conversations/{conversation_id}")
+async def get_conversation(
+    conversation_id: int,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
+):
+    """
+    Get a specific conversation by ID.
+    """
+    try:
+        conversation_service = ConversationService(db)
+        conversation = await conversation_service.get_conversation_by_id(conversation_id, user.id)
+        
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        return {
+            "id": str(conversation.id),
+            "user_id": str(conversation.user_id),
+            "title": conversation.title,
+            "created_at": conversation.created_at.isoformat(),
+            "updated_at": conversation.updated_at.isoformat(),
+            "category": getattr(conversation, 'category', None),
+            "is_active": True
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching conversation: {str(e)}")
+
+
+@router.get("/conversations/{conversation_id}/messages")
+async def get_conversation_messages(
+    conversation_id: int,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
+):
+    """
+    Get all messages for a specific conversation.
+    """
+    try:
+        conversation_service = ConversationService(db)
+        
+        # Verify conversation belongs to user
+        conversation = await conversation_service.get_conversation_by_id(conversation_id, user.id)
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        messages = await conversation_service.get_conversation_messages(conversation_id)
+        
+        # Convert to response format
+        message_responses = []
+        for msg in messages:
+            message_responses.append({
+                "id": str(msg.id),
+                "conversation_id": str(msg.conversation_id),
+                "content": msg.content,
+                "role": msg.role,
+                "timestamp": msg.created_at.isoformat(),
+                "metadata": {
+                    "tool_name": msg.tool_name,
+                    "tool_call_id": msg.tool_call_id
+                } if msg.tool_name else None
+            })
+        
+        return message_responses
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching messages: {str(e)}")
+
+
+@router.patch("/conversations/{conversation_id}")
+async def update_conversation(
+    conversation_id: int,
+    title: Optional[str] = None,
+    category: Optional[str] = None,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
+):
+    """
+    Update conversation title or category.
+    """
+    try:
+        conversation_service = ConversationService(db)
+        
+        # Verify conversation belongs to user
+        conversation = await conversation_service.get_conversation_by_id(conversation_id, user.id)
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        # Update conversation
+        updated_conversation = await conversation_service.update_conversation(
+            conversation_id, user.id, title=title, category=category
+        )
+        
+        return {
+            "id": str(updated_conversation.id),
+            "user_id": str(updated_conversation.user_id),
+            "title": updated_conversation.title,
+            "created_at": updated_conversation.created_at.isoformat(),
+            "updated_at": updated_conversation.updated_at.isoformat(),
+            "category": getattr(updated_conversation, 'category', None),
+            "is_active": True
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating conversation: {str(e)}")
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: int,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
+):
+    """
+    Delete a conversation and all its messages.
+    """
+    try:
+        conversation_service = ConversationService(db)
+        
+        # Verify conversation belongs to user
+        conversation = await conversation_service.get_conversation_by_id(conversation_id, user.id)
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        # Delete conversation (this should cascade to messages)
+        await conversation_service.delete_conversation(conversation_id, user.id)
+        
+        return {"message": f"Conversation {conversation_id} deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting conversation: {str(e)}")
+
+
+@router.post("/conversations")
+async def create_conversation(
+    title: str,
+    category: Optional[str] = None,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
+):
+    """
+    Create a new conversation.
+    """
+    try:
+        conversation_service = ConversationService(db)
+        conversation = await conversation_service.create_conversation(
+            user_id=user.id, 
+            title=title,
+            category=category
+        )
+        
+        return {
+            "id": str(conversation.id),
+            "user_id": str(conversation.user_id),
+            "title": conversation.title,
+            "created_at": conversation.created_at.isoformat(),
+            "updated_at": conversation.updated_at.isoformat(),
+            "category": getattr(conversation, 'category', None),
+            "is_active": True
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating conversation: {str(e)}")
