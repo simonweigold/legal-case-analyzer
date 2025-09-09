@@ -21,6 +21,13 @@ class Settings:
     CORS_METHODS = ["*"]
     CORS_HEADERS = ["*"]
     
+    # Database Configuration
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./legal_analyzer.db")
+    
+    # Authentication Configuration
+    SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    JWT_LIFETIME_SECONDS = 3600
+    
     # Environment Variables
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 

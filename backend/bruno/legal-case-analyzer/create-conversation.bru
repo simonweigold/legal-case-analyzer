@@ -1,0 +1,43 @@
+meta {
+  name: create-conversation
+  type: http
+  seq: 9
+}
+
+post {
+  url: http://localhost:8000/conversations/
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Legal Research Session"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+tests {
+  test("should create new conversation", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.have.property('id');
+    expect(res.getBody()).to.have.property('title');
+    expect(res.getBody()).to.have.property('user_id');
+    expect(res.getBody()).to.have.property('created_at');
+    expect(res.getBody().title).to.equal('Legal Research Session');
+    
+    // Store the new conversation ID
+    bru.setEnvVar('new_conversation_id', res.getBody().id);
+  });
+}

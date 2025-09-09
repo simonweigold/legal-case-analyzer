@@ -1,0 +1,33 @@
+meta {
+  name: get-current-user
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:8000/users/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+settings {
+  encodeUrl: true
+}
+
+tests {
+  test("should get current user info", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.have.property('id');
+    expect(res.getBody()).to.have.property('email');
+    expect(res.getBody()).to.have.property('is_active');
+    expect(res.getBody().is_active).to.equal(true);
+  });
+}

@@ -1,0 +1,36 @@
+meta {
+  name: user-login
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8000/auth/jwt/login
+  body: form
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+}
+
+body:form {
+  username: user@example.com
+  password: securePassword123!
+}
+
+settings {
+  encodeUrl: true
+}
+
+tests {
+  test("should login user successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.have.property('access_token');
+    expect(res.getBody()).to.have.property('token_type');
+    expect(res.getBody().token_type).to.equal('bearer');
+    
+    // Store the token for use in other requests
+    bru.setEnvVar('auth_token', res.getBody().access_token);
+  });
+}

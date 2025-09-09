@@ -1,3 +1,6 @@
+"""
+Minimal test version of main.py to check authentication setup
+"""
 import os
 from contextlib import asynccontextmanager
 from dotenv import find_dotenv, load_dotenv
@@ -42,42 +45,20 @@ app.add_middleware(
 async def root():
     return {"message": settings.API_TITLE, "version": settings.API_VERSION}
 
-# Import and setup after app creation to avoid circular imports
-def setup_routes_and_dependencies():
-    from langchain_openai import ChatOpenAI
-    from services.tools import get_tools, get_tools_by_name
-    from utils.workflow import create_workflow
-    from routes.auth import router as auth_router
-    from routes.conversations import router as conversations_router
-    from routes.chat import router as chat_router, set_model_and_tools
-    
-    # Initialize the language model
-    model = ChatOpenAI(model=settings.MODEL_NAME, streaming=settings.STREAMING)
-    
-    # Setup tools
-    tools = get_tools()
-    model = model.bind_tools(tools)
-    tools_by_name = get_tools_by_name()
-    
-    # Set model and tools for chat routes
-    set_model_and_tools(model, tools_by_name)
-    
-    # Create the workflow graph
-    graph = create_workflow(model, tools_by_name)
-    
-    # Make graph available to routes that need it
-    app.state.graph = graph
-    
-    # Include routes
-    app.include_router(auth_router)
-    app.include_router(conversations_router)
-    app.include_router(chat_router)
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
 
-# Setup routes and dependencies
-setup_routes_and_dependencies()
+# Only include auth routes for testing
+try:
+    from routes.auth import router as auth_router
+    app.include_router(auth_router)
+    print("✅ Auth routes loaded successfully")
+except Exception as e:
+    print(f"❌ Error loading auth routes: {e}")
 
 if __name__ == "__main__":
-    print(f"Starting {settings.API_TITLE}...")
+    print(f"Starting {settings.API_TITLE} (minimal test version)...")
     print(f"API will be available at: http://localhost:{settings.PORT}")
     print(f"API documentation at: http://localhost:{settings.PORT}/docs")
     uvicorn.run(app, host=settings.HOST, port=settings.PORT)

@@ -1,0 +1,43 @@
+meta {
+  name: authenticated-chat-new-conversation
+  type: http
+  seq: 7
+}
+
+post {
+  url: http://localhost:8000/chat/
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "Hello, I need help analyzing a legal case. Can you help me understand contract law principles?",
+    "conversation_title": "Contract Law Discussion"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+tests {
+  test("should create new conversation and get response", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.have.property('response');
+    expect(res.getBody()).to.have.property('conversation_id');
+    expect(res.getBody()).to.have.property('conversation_title');
+    expect(res.getBody().conversation_title).to.equal('Contract Law Discussion');
+    
+    // Store conversation ID for follow-up requests
+    bru.setEnvVar('conversation_id', res.getBody().conversation_id);
+  });
+}

@@ -1,0 +1,37 @@
+meta {
+  name: get-user-conversations
+  type: http
+  seq: 10
+}
+
+get {
+  url: http://localhost:8000/conversations/
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{auth_token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+settings {
+  encodeUrl: true
+}
+
+tests {
+  test("should get user conversations", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an('array');
+    
+    if (res.getBody().length > 0) {
+      expect(res.getBody()[0]).to.have.property('id');
+      expect(res.getBody()[0]).to.have.property('title');
+      expect(res.getBody()[0]).to.have.property('user_id');
+      expect(res.getBody()[0]).to.have.property('created_at');
+    }
+  });
+}
