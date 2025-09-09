@@ -17,7 +17,9 @@ import {
   Button,
   TextField,
   InputAdornment,
-  Badge
+  Badge,
+  Menu,
+  MenuItem
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -29,10 +31,13 @@ import {
   Logout,
   AccountCircle,
   MoreVert,
-  FilterList
+  FilterList,
+  Delete,
+  Edit
 } from '@mui/icons-material';
 import { User, ConversationHistory } from '../../types';
-import { sampleUser, sampleConversationHistories, getCategoryInfo, formatDate } from '../../data/sampleData';
+import { useAuth } from '../../contexts/AuthContext';
+import { AuthModal } from '../Auth';
 
 export interface SidebarProps {
   open: boolean;
@@ -43,9 +48,39 @@ export interface SidebarProps {
   onClearSession: () => void;
   isStreaming: boolean;
   loading: boolean;
+  conversations: ConversationHistory[];
+  onLoadConversation: (conversationId: string) => void;
+  onDeleteConversation: (conversationId: string) => void;
 }
 
 const DRAWER_WIDTH = 320;
+
+const getCategoryInfo = (category?: string) => {
+  switch (category) {
+    case 'contract':
+      return { label: 'Contract', color: '#2196f3' };
+    case 'litigation':
+      return { label: 'Litigation', color: '#f44336' };
+    case 'compliance':
+      return { label: 'Compliance', color: '#ff9800' };
+    case 'research':
+      return { label: 'Research', color: '#4caf50' };
+    default:
+      return { label: 'General', color: '#9e9e9e' };
+  }
+};
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 1) return 'Today';
+  if (diffDays === 2) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleDateString();
+};
 
 export function Sidebar({
   open,
@@ -55,19 +90,22 @@ export function Sidebar({
   sessionId,
   onClearSession,
   isStreaming,
-  loading
+  loading,
+  conversations,
+  onLoadConversation,
+  onDeleteConversation
 }: SidebarProps) {
-  // Mock state for user authentication - replace with real auth state
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
-  const [user] = useState<User>(sampleUser);
-  const [conversations] = useState<ConversationHistory[]>(sampleConversationHistories);
+  const { user, isAuthenticated, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   // Filter conversations based on search and category
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase());
+                         conv.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || conv.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -77,28 +115,56 @@ export function Sidebar({
     onToggle(); // Close sidebar on mobile after action
   };
 
-  const handleLoginToggle = () => {
-    setIsLoggedIn(!isLoggedIn);
+  const handleLoginClick = () => {
+    setAuthMode('login');
+    setAuthModalOpen(true);
+  };
+
+  const handleSignUpClick = () => {
+    setAuthMode('register');
+    setAuthModalOpen(true);
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+  };
+
+  const handleLogout = async () => {
+    handleMenuClose();
+    await logout();
   };
 
   const renderUserSection = () => {
-    if (!isLoggedIn) {
+    if (!isAuthenticated || !user) {
       return (
         <Box sx={{ p: 2, textAlign: 'center' }}>
           <AccountCircle sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
           <Typography variant="body2" color="text.secondary" gutterBottom>
             Sign in to access your conversation history
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<Login />}
-            onClick={handleLoginToggle}
-            size="small"
-            fullWidth
-            sx={{ mt: 1 }}
-          >
-            Sign In
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={<Login />}
+              onClick={handleLoginClick}
+              size="small"
+              fullWidth
+            >
+              Sign In
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleSignUpClick}
+              size="small"
+              fullWidth
+            >
+              Sign Up
+            </Button>
+          </Box>
         </Box>
       );
     }
@@ -108,21 +174,21 @@ export function Sidebar({
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <Avatar
             src={user.avatar}
-            alt={user.name}
+            alt={user.name || user.email}
             sx={{ width: 40, height: 40, mr: 2 }}
           >
-            {user.name.split(' ').map(n => n[0]).join('')}
+            {(user.name || user.email).split(' ').map(n => n[0]).join('').toUpperCase()}
           </Avatar>
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <Typography variant="subtitle2" noWrap>
-              {user.name}
+              {user.name || 'User'}
             </Typography>
             <Typography variant="caption" color="text.secondary" noWrap>
               {user.email}
             </Typography>
           </Box>
-          <IconButton size="small" onClick={handleLoginToggle}>
-            <Logout fontSize="small" />
+          <IconButton size="small" onClick={handleMenuOpen}>
+            <MoreVert fontSize="small" />
           </IconButton>
         </Box>
         
@@ -141,7 +207,7 @@ export function Sidebar({
   };
 
   const renderConversationHistory = () => {
-    if (!isLoggedIn) {
+    if (!isAuthenticated) {
       return (
         <Box sx={{ p: 3, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
@@ -193,6 +259,7 @@ export function Sidebar({
             return (
               <ListItem key={conversation.id} disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton
+                  onClick={() => onLoadConversation(conversation.id)}
                   sx={{
                     borderRadius: 1,
                     flexDirection: 'column',
@@ -228,53 +295,69 @@ export function Sidebar({
                       {conversation.title}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {formatDate(conversation.lastUpdated)}
+                      {formatDate(conversation.updated_at)}
                     </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteConversation(conversation.id);
+                      }}
+                      sx={{ ml: 1 }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
                   </Box>
                   
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      fontSize: '0.75rem',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      width: '100%',
-                      mb: 0.5
-                    }}
-                  >
-                    {conversation.lastMessage}
-                  </Typography>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                    <Chip
-                      label={conversation.category}
-                      size="small"
-                      variant="outlined"
+                  {conversation.lastMessage && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
                       sx={{
-                        fontSize: '0.6rem',
-                        height: 20,
-                        color: categoryInfo.color,
-                        borderColor: categoryInfo.color,
-                        mr: 1
-                      }}
-                    />
-                    <Badge
-                      badgeContent={conversation.messageCount}
-                      color="primary"
-                      sx={{
-                        '& .MuiBadge-badge': {
-                          fontSize: '0.6rem',
-                          height: 16,
-                          minWidth: 16
-                        }
+                        fontSize: '0.75rem',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        width: '100%',
+                        mb: 0.5
                       }}
                     >
-                      <Typography variant="caption" color="text.secondary">
-                        messages
-                      </Typography>
-                    </Badge>
+                      {conversation.lastMessage}
+                    </Typography>
+                  )}
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                    {conversation.category && (
+                      <Chip
+                        label={conversation.category}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          fontSize: '0.6rem',
+                          height: 20,
+                          color: categoryInfo.color,
+                          borderColor: categoryInfo.color,
+                          mr: 1
+                        }}
+                      />
+                    )}
+                    {conversation.messageCount && (
+                      <Badge
+                        badgeContent={conversation.messageCount}
+                        color="primary"
+                        sx={{
+                          '& .MuiBadge-badge': {
+                            fontSize: '0.6rem',
+                            height: 16,
+                            minWidth: 16
+                          }
+                        }}
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          messages
+                        </Typography>
+                      </Badge>
+                    )}
                   </Box>
                 </ListItemButton>
               </ListItem>
@@ -285,6 +368,14 @@ export function Sidebar({
             <Box sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
                 No conversations found matching "{searchQuery}"
+              </Typography>
+            </Box>
+          )}
+          
+          {filteredConversations.length === 0 && !searchQuery && isAuthenticated && (
+            <Box sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                No conversations yet. Start a new analysis!
               </Typography>
             </Box>
           )}
@@ -321,7 +412,7 @@ export function Sidebar({
       {renderConversationHistory()}
 
       {/* Footer */}
-      {isLoggedIn && (
+      {isAuthenticated && (
         <>
           <Divider />
           <Box sx={{ p: 2 }}>
@@ -382,6 +473,25 @@ export function Sidebar({
       >
         {drawerContent}
       </Drawer>
+
+      {/* User Menu */}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleLogout}>
+          <Logout sx={{ mr: 1 }} fontSize="small" />
+          Sign Out
+        </MenuItem>
+      </Menu>
+
+      {/* Auth Modal */}
+      <AuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode={authMode}
+      />
     </>
   );
 }

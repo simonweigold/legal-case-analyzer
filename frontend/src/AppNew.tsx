@@ -77,13 +77,9 @@ function AppContent() {
   const chatState = {
     messages: messages,
     input,
-    isLoading: isLoading,
-    loading: isLoading, // for backward compatibility
+    loading: isLoading,
     isStreaming: isStreaming,
-    sessionId: sessionId,
-    error: error,
-    conversationId: sessionId,
-    conversations: conversations
+    sessionId: sessionId
   };
 
   const chatActions = {

@@ -1,213 +1,267 @@
 // hooks/useChat.ts
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { apiService, Message, Conversation } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export interface ChatMessage {
-  role: "user" | "assistant";
+  id: string;
   content: string;
+  role: 'user' | 'assistant';
+  timestamp: Date;
+  isStreaming?: boolean;
 }
 
 export interface ChatState {
   messages: ChatMessage[];
-  input: string;
-  loading: boolean;
+  isLoading: boolean;
   isStreaming: boolean;
-  sessionId: string;
+  error: string | null;
+  conversationId: string | null;
+  conversations: Conversation[];
 }
 
-export interface ChatActions {
-  setInput: (input: string) => void;
-  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
-  sendMessage: () => Promise<void>;
-  clearSession: () => Promise<void>;
-  resetChat: () => void;
-}
-
-interface UseChatOptions {
-  apiBase: string;
-  onError?: (error: string) => void;
-  onSuccess?: () => void;
-}
-
-export function useChat({ apiBase, onError, onSuccess }: UseChatOptions) {
+export function useChat() {
+  const { isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [sessionId, setSessionId] = useState(() => crypto.randomUUID().slice(0, 8));
+  const [error, setError] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
-    if (!text || loading || isStreaming) return;
+  // Load conversations when user is authenticated
+  const loadConversations = useCallback(async () => {
+    if (!isAuthenticated) return;
     
-    setLoading(true);
-    setMessages(prev => [...prev, { role: "user", content: text }]);
-    setInput("");
-
-    // Try streaming first, fallback to regular chat if streaming fails
     try {
-      setIsStreaming(true);
-      
-      const response = await fetch(`${apiBase}/chat/stream`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "text/event-stream"
-        },
-        body: JSON.stringify({ message: text, session_id: sessionId }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Streaming failed: ${response.status}`);
-      }
-
-      // Add an empty assistant message that we'll update as we stream
-      let assistantMessageIndex: number;
-      setMessages(prev => {
-        const newMessages = [...prev, { role: "assistant" as const, content: "" }];
-        assistantMessageIndex = newMessages.length - 1;
-        return newMessages;
-      });
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let accumulatedContent = "";
-      let hasReceivedContent = false;
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                
-                if (data.error) {
-                  throw new Error(data.error);
-                }
-                
-                if (data.type === 'token' && data.content) {
-                  hasReceivedContent = true;
-                  accumulatedContent += data.content;
-                  setMessages(prev => {
-                    const newMessages = [...prev];
-                    newMessages[assistantMessageIndex] = {
-                      role: "assistant" as const,
-                      content: accumulatedContent
-                    };
-                    return newMessages;
-                  });
-                } else if (data.type === 'tool') {
-                  const toolIndicator = `\n\n🔧 ${data.content}`;
-                  setMessages(prev => {
-                    const newMessages = [...prev];
-                    newMessages[assistantMessageIndex] = {
-                      role: "assistant" as const,
-                      content: accumulatedContent + toolIndicator
-                    };
-                    return newMessages;
-                  });
-                } else if (data.type === 'tool_result') {
-                  const resultIndicator = `\n\n✅ Tool completed\n\n`;
-                  accumulatedContent += resultIndicator;
-                  setMessages(prev => {
-                    const newMessages = [...prev];
-                    newMessages[assistantMessageIndex] = {
-                      role: "assistant" as const,
-                      content: accumulatedContent
-                    };
-                    return newMessages;
-                  });
-                } else if (data.done) {
-                  break;
-                }
-              } catch (e) {
-                console.error('Error parsing SSE data:', e);
-              }
-            }
-          }
-        }
-      }
-
-      // If no content was received via streaming, fallback to regular chat
-      if (!hasReceivedContent) {
-        throw new Error('No content received from streaming');
-      }
-
-      onSuccess?.();
-
-    } catch (streamError) {
-      console.warn('Streaming failed, falling back to regular chat:', streamError);
-      
-      // Remove the empty assistant message if streaming failed
-      setMessages(prev => prev.slice(0, -1));
-      
-      // Fallback to regular non-streaming API
-      try {
-        const res = await fetch(`${apiBase}/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text, session_id: sessionId }),
-        });
-        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const data: { response: string; session_id: string } = await res.json();
-        setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
-        onSuccess?.();
-      } catch (fallbackError: any) {
-        const errorMessage = `Error: ${fallbackError?.message || String(fallbackError)}`;
-        setMessages(prev => [...prev, { role: "assistant", content: errorMessage }]);
-        onError?.(errorMessage);
-      }
-    } finally {
-      setLoading(false);
-      setIsStreaming(false);
-      inputRef.current?.focus();
+      const convs = await apiService.getConversations();
+      setConversations(convs);
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
     }
-  }, [apiBase, input, loading, isStreaming, sessionId, onError, onSuccess]);
+  }, [isAuthenticated]);
 
-  const clearSession = useCallback(async () => {
-    if (isStreaming) return;
-    try { 
-      await fetch(`${apiBase}/chat/history/${sessionId}`, { method: "DELETE" }); 
-    } catch {}
-    setMessages([]);
-    setSessionId(crypto.randomUUID().slice(0, 8));
-    setInput("");
-    inputRef.current?.focus();
-  }, [apiBase, sessionId, isStreaming]);
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
 
-  const resetChat = useCallback(() => {
+  // Convert API message to ChatMessage
+  const convertMessage = (msg: Message): ChatMessage => ({
+    id: msg.id,
+    content: msg.content,
+    role: msg.role,
+    timestamp: new Date(msg.timestamp),
+  });
+
+  // Load messages for a conversation
+  const loadConversation = useCallback(async (convId: string) => {
+    if (!isAuthenticated) return;
+    
+    try {
+      setIsLoading(true);
+      const msgs = await apiService.getMessages(convId);
+      setMessages(msgs.map(convertMessage));
+      setConversationId(convId);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to load conversation');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  // Start a new conversation
+  const startNewConversation = useCallback(() => {
     setMessages([]);
-    setInput("");
-    setLoading(false);
-    setIsStreaming(false);
+    setConversationId(null);
+    setError(null);
+    // Cancel any ongoing requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
   }, []);
 
-  const state: ChatState = {
-    messages,
-    input,
-    loading,
-    isStreaming,
-    sessionId
-  };
+  // Clear session (alias for startNewConversation for backward compatibility)
+  const clearSession = useCallback(() => {
+    startNewConversation();
+  }, [startNewConversation]);
 
-  const actions: ChatActions = {
-    setInput,
-    setMessages,
-    sendMessage,
-    clearSession,
-    resetChat
-  };
+  const sendMessage = useCallback(async (content: string, source: 'text' | 'pdf' = 'text', filename?: string) => {
+    if (!content.trim() || isLoading || isStreaming || !isAuthenticated) return;
+
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    // Create user message
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      content,
+      role: 'user',
+      timestamp: new Date(),
+    };
+
+    // Create assistant message placeholder
+    const assistantMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      content: '',
+      role: 'assistant',
+      timestamp: new Date(),
+      isStreaming: true,
+    };
+
+    setMessages(prev => [...prev, userMessage, assistantMessage]);
+    setIsLoading(true);
+    setIsStreaming(true);
+    setError(null);
+
+    try {
+      // Try streaming first
+      await apiService.sendStreamingMessage(
+        {
+          message: content,
+          conversation_id: conversationId || undefined,
+        },
+        // On chunk received
+        (chunk: string) => {
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === assistantMessage.id 
+                ? { ...msg, content: msg.content + chunk }
+                : msg
+            )
+          );
+        },
+        // On complete
+        (response) => {
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === assistantMessage.id 
+                ? { ...msg, content: response.response, isStreaming: false }
+                : msg
+            )
+          );
+          
+          // Update conversation ID if this was a new conversation
+          if (!conversationId && response.conversation_id) {
+            setConversationId(response.conversation_id);
+            loadConversations(); // Refresh conversation list
+          }
+        },
+        // On error
+        (streamError) => {
+          console.error('Streaming failed, falling back to regular chat:', streamError);
+          
+          // Fallback to regular chat
+          apiService.sendMessage({
+            message: content,
+            conversation_id: conversationId || undefined,
+          })
+          .then((data) => {
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === assistantMessage.id 
+                  ? { ...msg, content: data.response, isStreaming: false }
+                  : msg
+              )
+            );
+            
+            if (!conversationId && data.conversation_id) {
+              setConversationId(data.conversation_id);
+              loadConversations();
+            }
+          })
+          .catch((fallbackError) => {
+            setError(fallbackError.message || 'Failed to send message');
+            setMessages(prev => prev.filter(msg => msg.id !== assistantMessage.id));
+          })
+          .finally(() => {
+            setIsLoading(false);
+            setIsStreaming(false);
+          });
+        }
+      );
+
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        // Request was cancelled, remove the assistant message
+        setMessages(prev => prev.filter(msg => msg.id !== assistantMessage.id));
+        return;
+      }
+      
+      setError(error.message || 'Failed to send message');
+      setMessages(prev => prev.filter(msg => msg.id !== assistantMessage.id));
+    } finally {
+      setIsLoading(false);
+      setIsStreaming(false);
+      // Mark assistant message as no longer streaming
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === assistantMessage.id 
+            ? { ...msg, isStreaming: false }
+            : msg
+        )
+      );
+    }
+  }, [conversationId, isLoading, isStreaming, isAuthenticated, loadConversations]);
+
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsStreaming(false);
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Delete a conversation
+  const deleteConversation = useCallback(async (convId: string) => {
+    if (!isAuthenticated) return;
+    
+    try {
+      await apiService.deleteConversation(convId);
+      setConversations(prev => prev.filter(c => c.id !== convId));
+      
+      // If we deleted the current conversation, start a new one
+      if (convId === conversationId) {
+        startNewConversation();
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to delete conversation');
+    }
+  }, [isAuthenticated, conversationId, startNewConversation]);
+
+  // Update conversation title
+  const updateConversationTitle = useCallback(async (convId: string, title: string) => {
+    if (!isAuthenticated) return;
+    
+    try {
+      const updated = await apiService.updateConversation(convId, { title });
+      setConversations(prev => prev.map(c => c.id === convId ? updated : c));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to update conversation');
+    }
+  }, [isAuthenticated]);
 
   return {
-    state,
-    actions,
-    inputRef
+    messages,
+    isLoading,
+    isStreaming,
+    error,
+    sessionId: conversationId || '',
+    conversationId,
+    conversations,
+    sendMessage,
+    clearSession,
+    stopGeneration,
+    loadConversation,
+    startNewConversation,
+    deleteConversation,
+    updateConversationTitle,
+    loadConversations,
   };
 }
