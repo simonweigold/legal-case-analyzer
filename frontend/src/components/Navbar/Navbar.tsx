@@ -42,7 +42,7 @@ export function Navbar({
             </span>
           </div>
         )}
-        {sessionId && (
+        {sessionId && typeof sessionId === 'string' && (
           <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded">
             Session: {sessionId.slice(-8)}
           </span>

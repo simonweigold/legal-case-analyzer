@@ -123,11 +123,11 @@ function AppContent() {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   return (
-    <div className={cn("h-screen", darkMode && "dark")}>
+    <div className={cn("h-screen overflow-hidden", darkMode && "dark")}>
       {/* Grid layout container */}
       <div className="grid grid-cols-[auto_1fr_auto] grid-rows-[auto_1fr] h-full bg-background text-foreground">
         {/* Top navbar spanning all columns */}
-        <header className="col-span-3 border-b border-border">
+        <header className="col-span-3 border-b border-border flex-shrink-0">
           <Navbar
             darkMode={darkMode}
             onThemeToggle={toggleDarkMode}
@@ -139,7 +139,7 @@ function AppContent() {
         </header>
 
         {/* Left sidebar - Input */}
-        <aside className="border-r border-border bg-sidebar">
+        <aside className="border-r border-border bg-sidebar overflow-hidden">
           <InputSidebar
             open={true}
             onToggle={() => {}}
@@ -149,7 +149,7 @@ function AppContent() {
         </aside>
 
         {/* Main content area */}
-        <main className="min-w-0 bg-background">
+        <main className="min-w-0 bg-background overflow-hidden">
           <ChatInterface
             state={chatState}
             actions={chatActions}
@@ -158,7 +158,7 @@ function AppContent() {
         </main>
 
         {/* Right sidebar - Conversations */}
-        <aside className="border-l border-border bg-sidebar">
+        <aside className="border-l border-border bg-sidebar overflow-hidden">
           <Sidebar
             open={true}
             onToggle={() => {}} 

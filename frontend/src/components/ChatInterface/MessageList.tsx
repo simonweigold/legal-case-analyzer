@@ -100,9 +100,16 @@ function LoadingMessage() {
 }
 
 export function MessageList({ messages, loading, isStreaming }: MessageListProps) {
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading, isStreaming]);
+
   if (messages.length === 0 && !loading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="h-full flex items-center justify-center p-8 overflow-y-auto">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
             <Bot className="w-8 h-8" />
@@ -120,17 +127,22 @@ export function MessageList({ messages, loading, isStreaming }: MessageListProps
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-0">
-      <div className="max-w-4xl mx-auto">
-        {messages.map((message, index) => (
-          <MessageItem
-            key={message.id}
-            message={message}
-            index={index}
-          />
-        ))}
-        
-        {loading && <LoadingMessage />}
+    <div className="h-full overflow-y-auto">
+      <div className="p-4 space-y-0">
+        <div className="max-w-4xl mx-auto">
+          {messages.map((message, index) => (
+            <MessageItem
+              key={message.id}
+              message={message}
+              index={index}
+            />
+          ))}
+          
+          {loading && <LoadingMessage />}
+          
+          {/* Scroll anchor */}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
     </div>
   );

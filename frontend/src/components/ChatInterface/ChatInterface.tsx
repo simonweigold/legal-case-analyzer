@@ -1,5 +1,5 @@
 // components/ChatInterface/ChatInterface.tsx
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { MessageList } from './MessageList';
 import { InputArea } from './InputArea';
 import type { ChatState } from '../../hooks/useChat';
@@ -18,29 +18,19 @@ export interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [state.messages, state.isLoading, state.isStreaming]);
-
   return (
-    <div className="h-full flex flex-col bg-background">
-      {/* Messages Area */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+    <div className="h-full flex flex-col bg-background overflow-hidden">
+      {/* Messages Area - This is the scrollable section */}
+      <div className="flex-1 min-h-0 overflow-hidden">
         <MessageList 
           messages={state.messages}
           loading={state.isLoading}
           isStreaming={state.isStreaming}
         />
-        
-        {/* Scroll anchor */}
-        <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 pt-2 border-t border-border">
+      {/* Input Area - Fixed at bottom */}
+      <div className="flex-shrink-0 p-4 pt-2 border-t border-border">
         <InputArea
           input={state.input}
           onInputChange={actions.setInput}
