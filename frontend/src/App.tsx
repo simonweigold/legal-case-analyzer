@@ -5,7 +5,6 @@ import { Sidebar } from './components/Sidebar';
 import { InputSidebar } from './components/InputSidebar';
 import { Navbar } from './components/Navbar';
 import { useChat } from './hooks/useChat';
-import { useTheme } from './hooks/useTheme';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { cn } from './lib/utils';
 
@@ -40,7 +39,6 @@ function ErrorNotification({ error, onClose }: { error: string | null; onClose: 
 }
 
 function AppContent() {
-  const { darkMode, toggleDarkMode } = useTheme();
   const {
     messages,
     isLoading,
@@ -123,14 +121,12 @@ function AppContent() {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   return (
-    <div className={cn("h-screen overflow-hidden", darkMode && "dark")}>
+    <div className="h-screen overflow-hidden">
       {/* Grid layout container */}
       <div className="grid grid-cols-[auto_1fr_auto] grid-rows-[auto_1fr] h-full bg-background text-foreground">
         {/* Top navbar spanning all columns */}
         <header className="col-span-3 border-b border-border flex-shrink-0">
           <Navbar
-            darkMode={darkMode}
-            onThemeToggle={toggleDarkMode}
             sessionId={sessionId}
             onClearSession={clearSession}
             isStreaming={isStreaming}
@@ -162,8 +158,6 @@ function AppContent() {
           <Sidebar
             open={true}
             onToggle={() => {}} 
-            darkMode={darkMode}
-            onThemeToggle={toggleDarkMode}
             sessionId={sessionId}
             onClearSession={clearSession}
             isStreaming={isStreaming}

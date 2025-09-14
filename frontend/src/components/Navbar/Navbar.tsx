@@ -1,11 +1,9 @@
 // components/Navbar/Navbar.tsx
 import React from 'react';
-import { Sun, Moon, RotateCcw, Activity } from 'lucide-react';
+import { RotateCcw, Activity } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export interface NavbarProps {
-  darkMode: boolean;
-  onThemeToggle: () => void;
   sessionId: string | null;
   onClearSession: () => void;
   isStreaming: boolean;
@@ -13,8 +11,6 @@ export interface NavbarProps {
 }
 
 export function Navbar({
-  darkMode,
-  onThemeToggle,
   sessionId,
   onClearSession,
   isStreaming,
@@ -64,18 +60,6 @@ export function Navbar({
             <RotateCcw className="w-4 h-4" />
           </button>
         )}
-        
-        <button
-          onClick={onThemeToggle}
-          className="btn btn-ghost h-8 w-8 p-0"
-          title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        >
-          {darkMode ? (
-            <Sun className="w-4 h-4" />
-          ) : (
-            <Moon className="w-4 h-4" />
-          )}
-        </button>
       </div>
     </nav>
   );

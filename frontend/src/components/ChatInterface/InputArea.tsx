@@ -1,17 +1,7 @@
 // components/ChatInterface/InputArea.tsx
 import React, { KeyboardEvent } from 'react';
-import {
-  Box,
-  TextField,
-  IconButton,
-  Paper,
-  Tooltip,
-  CircularProgress
-} from '@mui/material';
-import {
-  Send,
-  Stop
-} from '@mui/icons-material';
+import { Send, Square } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 export interface InputAreaProps {
   input: string;
@@ -33,7 +23,7 @@ export function InputArea({
   const canSend = input.trim() && !loading && !isStreaming;
   const isProcessing = loading || isStreaming;
 
-  const handleKeyPress = (e: KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (canSend) {
@@ -49,92 +39,65 @@ export function InputArea({
   };
 
   return (
-    <Paper
-      elevation={3}
-      sx={{
-        p: 2,
-        borderRadius: 2,
-        backgroundColor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'divider'
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
-        <TextField
-          inputRef={inputRef}
-          multiline
-          fullWidth
-          maxRows={4}
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="relative">
+        <textarea
+          ref={inputRef as React.RefObject<HTMLTextAreaElement>}
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Ask about legal cases, upload documents, or request analysis..."
+          onKeyDown={handleKeyPress}
+          placeholder={isProcessing ? "Processing..." : "Ask a question about legal matters..."}
           disabled={isProcessing}
-          variant="outlined"
-          size="small"
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: 'background.default',
-              '&:hover': {
-                backgroundColor: 'background.default',
-              },
-              '&.Mui-focused': {
-                backgroundColor: 'background.default',
-              }
-            }
+          rows={1}
+          className={cn(
+            "textarea w-full pr-12 min-h-[50px] max-h-[200px] resize-none",
+            isProcessing && "cursor-not-allowed opacity-75"
+          )}
+          style={{
+            overflow: 'hidden',
+            resize: 'none',
+          }}
+          onInput={(e) => {
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = 'auto';
+            target.style.height = Math.min(target.scrollHeight, 200) + 'px';
           }}
         />
         
-        <Tooltip 
-          title={
-            isStreaming 
-              ? "Stop streaming" 
-              : canSend 
-                ? "Send message (Enter)" 
-                : "Type a message to send"
-          }
-        >
-          <span>
-            <IconButton
-              onClick={handleSendClick}
-              disabled={!canSend && !isStreaming}
-              color="primary"
-              sx={{
-                minWidth: 40,
-                height: 40,
-                borderRadius: 1
-              }}
-            >
-              {isProcessing ? (
-                isStreaming ? (
-                  <Stop />
-                ) : (
-                  <CircularProgress size={20} />
-                )
-              ) : (
-                <Send />
-              )}
-            </IconButton>
-          </span>
-        </Tooltip>
-      </Box>
-      
-      {/* Status Indicator */}
-      {isProcessing && (
-        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CircularProgress size={12} />
-          <Box
-            component="span"
-            sx={{
-              fontSize: '0.75rem',
-              color: 'text.secondary',
-              fontStyle: 'italic'
-            }}
+        <div className="absolute right-2 bottom-2 flex items-center space-x-1">
+          {isProcessing && (
+            <div className="flex items-center text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
+              <span className="text-xs">
+                {isStreaming ? 'Streaming...' : 'Processing...'}
+              </span>
+            </div>
+          )}
+          
+          <button
+            onClick={handleSendClick}
+            disabled={!canSend}
+            className={cn(
+              "btn btn-primary h-8 w-8 p-0",
+              !canSend && "opacity-50 cursor-not-allowed"
+            )}
+            title={canSend ? "Send message" : "Enter a message to send"}
           >
-            {isStreaming ? 'Streaming response...' : 'Processing your request...'}
-          </Box>
-        </Box>
-      )}
-    </Paper>
+            {isStreaming ? (
+              <Square className="w-4 h-4" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+        <span>Press Enter to send, Shift+Enter for new line</span>
+        {input.length > 0 && (
+          <span>{input.length} characters</span>
+        )}
+      </div>
+    </div>
   );
 }

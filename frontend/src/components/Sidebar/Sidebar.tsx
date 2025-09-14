@@ -4,8 +4,6 @@ import {
   MessageSquare, 
   Plus, 
   Search, 
-  Sun, 
-  Moon, 
   LogIn, 
   LogOut, 
   User, 
@@ -22,8 +20,6 @@ import { AuthModal } from '../Auth';
 export interface SidebarProps {
   open: boolean;
   onToggle: () => void;
-  darkMode: boolean;
-  onThemeToggle: () => void;
   sessionId: string | null;
   onClearSession: () => void;
   isStreaming: boolean;
@@ -48,8 +44,6 @@ const formatDate = (dateString: string) => {
 export function Sidebar({
   open,
   onToggle,
-  darkMode,
-  onThemeToggle,
   sessionId,
   onClearSession,
   isStreaming,
@@ -250,19 +244,7 @@ export function Sidebar({
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={onThemeToggle}
-            className="btn btn-ghost h-8 w-8 p-0"
-            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {darkMode ? (
-              <Sun className="w-4 h-4" />
-            ) : (
-              <Moon className="w-4 h-4" />
-            )}
-          </button>
-          
+        <div className="flex items-center justify-end">
           {sessionId && (
             <button
               onClick={onClearSession}
