@@ -7,6 +7,16 @@ export default {
   theme: {
     extend: {
       colors: {
+        // CAUSA AI Brand Colors
+        brand: "#130DDD",
+        dark: "#111111",
+        light: "#FAFAFA",
+        white: "#FFFFFF",
+        gray: {
+          DEFAULT: "#888888",
+          dark: "#333333",
+        },
+        // Legacy shadcn/ui colors for components
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -58,15 +68,39 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      fontFamily: {
+        logo: ["'Bodoni Moda SC'", "serif"],
+        sans: ["Inter", "sans-serif"],
+        serif: ["var(--font-serif)"],
+        mono: ["var(--font-mono)"],
+      },
+      fontSize: {
+        'h1': ['32px', { lineHeight: '1.2', fontWeight: '700' }],
+        'h2': ['24px', { lineHeight: '1.3', fontWeight: '600' }],
+        'body': ['16px', { lineHeight: '1.5', fontWeight: '400' }],
+        'small': ['14px', { lineHeight: '1.4', fontWeight: '400' }],
+      },
+      spacing: {
+        '4px': '4px',
+        '8px': '8px',
+        '12px': '12px',
+        '16px': '16px',
+        '24px': '24px',
+        '32px': '32px',
+        '48px': '48px',
+      },
       borderRadius: {
+        'causa': '8px',
+        'causa-lg': '12px',
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      fontFamily: {
-        sans: ["var(--font-sans)"],
-        serif: ["var(--font-serif)"],
-        mono: ["var(--font-mono)"],
+      backgroundImage: {
+        'brand-gradient': 'linear-gradient(90deg, #130DDD, #8888FF)',
+      },
+      maxWidth: {
+        'app': '1440px',
       },
     },
   },

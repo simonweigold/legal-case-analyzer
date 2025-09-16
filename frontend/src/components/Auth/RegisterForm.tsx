@@ -1,19 +1,8 @@
 // components/Auth/RegisterForm.tsx
 import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Alert,
-  Paper,
-  Link,
-  InputAdornment,
-  IconButton,
-  CircularProgress
-} from '@mui/material';
-import { Visibility, VisibilityOff, PersonAdd } from '@mui/icons-material';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { cn } from '../../lib/utils';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
@@ -31,7 +20,6 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [success, setSuccess] = useState(false);
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -48,7 +36,9 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
       errors.password = 'Password must be at least 8 characters';
     }
     
-    if (formData.password !== formData.confirmPassword) {
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match';
     }
     
@@ -59,7 +49,6 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-    setSuccess(false);
     
     if (!validateForm()) {
       return;
@@ -71,11 +60,7 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
         password: formData.password,
         name: formData.name || undefined,
       });
-      setSuccess(true);
-      setTimeout(() => {
-        onSwitchToLogin();
-        onSuccess?.();
-      }, 2000);
+      onSuccess?.();
     } catch (error) {
       // Error is handled by the auth context
     }
@@ -88,138 +73,149 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
     }
   };
 
-  if (success) {
-    return (
-      <Paper elevation={3} sx={{ p: 4, maxWidth: 400, mx: 'auto' }}>
-        <Box sx={{ textAlign: 'center' }}>
-          <PersonAdd sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
-          <Typography variant="h5" component="h1" gutterBottom>
-            Registration Successful!
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Your account has been created. Redirecting to sign in...
-          </Typography>
-        </Box>
-      </Paper>
-    );
-  }
-
   return (
-    <Paper elevation={3} sx={{ p: 4, maxWidth: 400, mx: 'auto' }}>
-      <Box component="form" onSubmit={handleSubmit}>
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <PersonAdd sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
-          <Typography variant="h5" component="h1" gutterBottom>
-            Sign Up
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Create an account to start analyzing legal cases
-          </Typography>
-        </Box>
-
+    <div>
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
+          <div className="bg-red-50 border border-red-200 rounded-causa p-4">
+            <p className="text-small text-red-600">{error}</p>
+          </div>
         )}
 
-        <TextField
-          fullWidth
-          label="Full Name (Optional)"
-          value={formData.name}
-          onChange={handleChange('name')}
-          margin="normal"
-          autoComplete="name"
-          autoFocus
-        />
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-body text-dark mb-2">
+              Full Name (Optional)
+            </label>
+            <input
+              id="name"
+              type="text"
+              value={formData.name}
+              onChange={handleChange('name')}
+              className="causa-input w-full"
+              placeholder="Enter your full name"
+              disabled={isLoading}
+            />
+          </div>
 
-        <TextField
-          fullWidth
-          label="Email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange('email')}
-          error={!!formErrors.email}
-          helperText={formErrors.email}
-          margin="normal"
-          required
-          autoComplete="email"
-        />
+          <div>
+            <label htmlFor="email" className="block text-body text-dark mb-2">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange('email')}
+              className={cn(
+                "causa-input w-full",
+                formErrors.email && "border-red-500"
+              )}
+              placeholder="Enter your email"
+              disabled={isLoading}
+            />
+            {formErrors.email && (
+              <p className="text-small text-red-500 mt-1">{formErrors.email}</p>
+            )}
+          </div>
 
-        <TextField
-          fullWidth
-          label="Password"
-          type={showPassword ? 'text' : 'password'}
-          value={formData.password}
-          onChange={handleChange('password')}
-          error={!!formErrors.password}
-          helperText={formErrors.password || 'Must be at least 8 characters'}
-          margin="normal"
-          required
-          autoComplete="new-password"
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={() => setShowPassword(!showPassword)}
-                  edge="end"
-                >
-                  {showPassword ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+          <div>
+            <label htmlFor="password" className="block text-body text-dark mb-2">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={handleChange('password')}
+                className={cn(
+                  "causa-input w-full pr-12",
+                  formErrors.password && "border-red-500"
+                )}
+                placeholder="Create a password"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray hover:text-dark"
+                disabled={isLoading}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {formErrors.password ? (
+              <p className="text-small text-red-500 mt-1">{formErrors.password}</p>
+            ) : (
+              <p className="text-small text-gray mt-1">Must be at least 8 characters</p>
+            )}
+          </div>
 
-        <TextField
-          fullWidth
-          label="Confirm Password"
-          type={showConfirmPassword ? 'text' : 'password'}
-          value={formData.confirmPassword}
-          onChange={handleChange('confirmPassword')}
-          error={!!formErrors.confirmPassword}
-          helperText={formErrors.confirmPassword}
-          margin="normal"
-          required
-          autoComplete="new-password"
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  edge="end"
-                >
-                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+          <div>
+            <label htmlFor="confirmPassword" className="block text-body text-dark mb-2">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={formData.confirmPassword}
+                onChange={handleChange('confirmPassword')}
+                className={cn(
+                  "causa-input w-full pr-12",
+                  formErrors.confirmPassword && "border-red-500"
+                )}
+                placeholder="Confirm your password"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray hover:text-dark"
+                disabled={isLoading}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {formErrors.confirmPassword && (
+              <p className="text-small text-red-500 mt-1">{formErrors.confirmPassword}</p>
+            )}
+          </div>
+        </div>
 
-        <Button
+        <button
           type="submit"
-          fullWidth
-          variant="contained"
           disabled={isLoading}
-          sx={{ mt: 3, mb: 2, height: 48 }}
+          className={cn(
+            "causa-btn causa-btn-primary w-full",
+            isLoading && "opacity-50 cursor-not-allowed"
+          )}
         >
-          {isLoading ? <CircularProgress size={24} /> : 'Sign Up'}
-        </Button>
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              Creating account...
+            </div>
+          ) : (
+            'Create Account'
+          )}
+        </button>
 
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="body2">
+        <div className="text-center">
+          <p className="text-body text-gray-dark">
             Already have an account?{' '}
-            <Link
-              component="button"
+            <button
               type="button"
               onClick={onSwitchToLogin}
-              sx={{ textDecoration: 'none' }}
+              className="text-brand font-medium hover:underline"
+              disabled={isLoading}
             >
               Sign in
-            </Link>
-          </Typography>
-        </Box>
-      </Box>
-    </Paper>
+            </button>
+          </p>
+        </div>
+      </form>
+    </div>
   );
 }

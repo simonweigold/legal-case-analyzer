@@ -46,11 +46,11 @@ export function InputArea({
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder={isProcessing ? "Processing..." : "Ask a question about legal matters..."}
+          placeholder={isProcessing ? "Analyzing..." : "Ask questions about legal cases, statutes, or documents..."}
           disabled={isProcessing}
           rows={1}
           className={cn(
-            "textarea w-full pr-12 min-h-[50px] max-h-[200px] resize-none",
+            "causa-input w-full pr-16 min-h-[56px] max-h-[200px] resize-none text-body",
             isProcessing && "cursor-not-allowed opacity-75"
           )}
           style={{
@@ -64,12 +64,12 @@ export function InputArea({
           }}
         />
         
-        <div className="absolute right-2 bottom-2 flex items-center space-x-1">
+        <div className="absolute right-3 bottom-3 flex items-center space-x-2">
           {isProcessing && (
-            <div className="flex items-center text-muted-foreground">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
-              <span className="text-xs">
-                {isStreaming ? 'Streaming...' : 'Processing...'}
+            <div className="flex items-center text-gray">
+              <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin mr-2" />
+              <span className="text-small">
+                {isStreaming ? 'Analyzing...' : 'Processing...'}
               </span>
             </div>
           )}
@@ -78,7 +78,7 @@ export function InputArea({
             onClick={handleSendClick}
             disabled={!canSend}
             className={cn(
-              "btn btn-primary h-8 w-8 p-0",
+              "causa-btn bg-brand-gradient text-white h-10 w-10 p-0 rounded-causa",
               !canSend && "opacity-50 cursor-not-allowed"
             )}
             title={canSend ? "Send message" : "Enter a message to send"}
@@ -92,10 +92,10 @@ export function InputArea({
         </div>
       </div>
       
-      <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between mt-3 text-small text-gray">
         <span>Press Enter to send, Shift+Enter for new line</span>
         {input.length > 0 && (
-          <span>{input.length} characters</span>
+          <span className="text-gray-dark">{input.length} characters</span>
         )}
       </div>
     </div>

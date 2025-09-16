@@ -21,12 +21,12 @@ function ErrorNotification({ error, onClose }: { error: string | null; onClose: 
 
   return (
     <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
-      <div className="bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg border border-destructive/20">
+      <div className="bg-red-500 text-white px-4 py-3 rounded-causa shadow-lg border border-red-500/20">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">{error}</span>
+          <span className="text-small font-medium">{error}</span>
           <button
             onClick={onClose}
-            className="ml-3 text-destructive-foreground/80 hover:text-destructive-foreground"
+            className="ml-3 text-white/80 hover:text-white transition-colors"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6L6 18M6 6l12 12" />
@@ -121,11 +121,11 @@ function AppContent() {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   return (
-    <div className="h-screen overflow-hidden">
-      {/* Grid layout container */}
-      <div className="grid grid-cols-[auto_1fr_auto] grid-rows-[auto_1fr] h-full bg-background text-foreground">
+    <div className="h-screen overflow-hidden max-w-app mx-auto">
+      {/* Grid layout container with CAUSA AI styling */}
+      <div className="grid grid-cols-[320px_1fr_320px] grid-rows-[auto_1fr] h-full bg-light text-dark">
         {/* Top navbar spanning all columns */}
-        <header className="col-span-3 border-b border-border flex-shrink-0">
+        <header className="col-span-3 border-b border-gray/20 flex-shrink-0 bg-white">
           <Navbar
             sessionId={sessionId}
             onClearSession={clearSession}
@@ -135,7 +135,7 @@ function AppContent() {
         </header>
 
         {/* Left sidebar - Input */}
-        <aside className="border-r border-border bg-sidebar overflow-hidden">
+        <aside className="border-r border-gray-dark/10 bg-light overflow-hidden">
           <InputSidebar
             open={true}
             onToggle={() => {}}
@@ -145,7 +145,7 @@ function AppContent() {
         </aside>
 
         {/* Main content area */}
-        <main className="min-w-0 bg-background overflow-hidden">
+        <main className="min-w-0 bg-light overflow-hidden">
           <ChatInterface
             state={chatState}
             actions={chatActions}
@@ -154,7 +154,7 @@ function AppContent() {
         </main>
 
         {/* Right sidebar - Conversations */}
-        <aside className="border-l border-border bg-sidebar overflow-hidden">
+        <aside className="border-l border-gray-dark/10 bg-light overflow-hidden">
           <Sidebar
             open={true}
             onToggle={() => {}} 

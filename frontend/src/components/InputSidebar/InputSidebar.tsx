@@ -105,45 +105,45 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
   };
 
   return (
-    <div className="w-80 h-full flex flex-col bg-sidebar border-r border-sidebar-border">
+    <div className="w-full h-full flex flex-col bg-light">
       {/* Header */}
-      <div className="p-4 border-b border-sidebar-border">
-        <h2 className="text-lg font-semibold text-sidebar-foreground">Input & Documents</h2>
-        <p className="text-sm text-sidebar-foreground/70 mt-1">
-          Enter text or upload documents to analyze
+      <div className="p-6 border-b border-gray-dark/10">
+        <h2 className="text-h2 text-dark">Case Input</h2>
+        <p className="text-small text-gray-dark mt-1">
+          Enter legal text or upload documents for analysis
         </p>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-8">
         {/* Text Input Section */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-sidebar-foreground">Direct Text Input</h3>
-          <div className="space-y-3">
+        <div className="space-y-4">
+          <h3 className="text-body font-medium text-dark">Legal Text Analysis</h3>
+          <div className="space-y-4">
             <textarea
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Enter legal text to analyze..."
-              className="textarea w-full min-h-[120px] bg-sidebar-accent text-sidebar-accent-foreground"
+              placeholder="Enter legal case details, statutes, or court documents to analyze..."
+              className="causa-textarea causa-input-tinted w-full min-h-[120px]"
               disabled={isProcessing}
             />
             <button
               onClick={handleTextSubmit}
               disabled={!textInput.trim() || isProcessing}
               className={cn(
-                "btn btn-primary w-full h-10",
+                "causa-btn causa-btn-primary w-full",
                 (!textInput.trim() || isProcessing) && "opacity-50 cursor-not-allowed"
               )}
             >
               <Send className="w-4 h-4 mr-2" />
-              {isProcessing ? 'Processing...' : 'Analyze Text'}
+              {isProcessing ? 'Analyzing...' : 'Analyze Legal Text'}
             </button>
           </div>
         </div>
 
         {/* File Upload Section */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-sidebar-foreground">Document Upload</h3>
+        <div className="space-y-4">
+          <h3 className="text-body font-medium text-dark">Document Upload</h3>
           
           {/* Drop Zone */}
           <div
@@ -155,17 +155,18 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
             onDragLeave={() => setDragOver(false)}
             onClick={() => fileInputRef.current?.click()}
             className={cn(
-              "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
-              dragOver 
-                ? "border-sidebar-primary bg-sidebar-accent/50" 
-                : "border-sidebar-border hover:border-sidebar-primary/50 hover:bg-sidebar-accent/20"
+              "causa-upload-zone py-8",
+              dragOver && "border-brand"
             )}
           >
-            <Upload className="w-8 h-8 mx-auto mb-2 text-sidebar-foreground/50" />
-            <p className="text-sm text-sidebar-foreground/70">
-              Drag & drop files here, or click to select
+            <Upload className="w-8 h-8 mx-auto mb-3 text-gray" />
+            <p className="text-body text-dark">
+              Drag & drop legal documents here
             </p>
-            <p className="text-xs text-sidebar-foreground/50 mt-1">
+            <p className="text-small text-gray mt-1">
+              or click to browse files
+            </p>
+            <p className="text-small text-gray mt-2">
               Supports PDF and text files
             </p>
           </div>
@@ -181,51 +182,51 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
 
         {/* Uploaded Files */}
         {uploadedFiles.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-sidebar-foreground">Uploaded Files</h3>
-            <div className="space-y-2">
+          <div className="space-y-4">
+            <h3 className="text-body font-medium text-dark">Uploaded Documents</h3>
+            <div className="space-y-3">
               {uploadedFiles.map((file) => (
                 <div
                   key={file.id}
-                  className="p-3 bg-sidebar-accent rounded-lg border border-sidebar-border"
+                  className="p-4 bg-white rounded-causa border border-gray/20"
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-2 flex-1 min-w-0">
-                      <FileText className="w-4 h-4 mt-0.5 text-sidebar-foreground/50 flex-shrink-0" />
+                    <div className="flex items-start space-x-3 flex-1 min-w-0">
+                      <FileText className="w-5 h-5 mt-0.5 text-gray flex-shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-sidebar-accent-foreground truncate">
+                        <p className="text-body font-medium text-dark truncate">
                           {file.name}
                         </p>
-                        <p className="text-xs text-sidebar-foreground/60">
+                        <p className="text-small text-gray">
                           {formatFileSize(file.size)}
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={() => removeFile(file.id)}
-                      className="btn btn-ghost h-6 w-6 p-0 text-sidebar-foreground/50 hover:text-sidebar-foreground"
+                      className="p-1 text-gray hover:text-dark transition-colors"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
 
                   {/* Status */}
-                  <div className="mt-2">
+                  <div className="mt-3">
                     {file.status === 'uploading' && (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-full bg-sidebar-border rounded-full h-1.5">
-                          <div className="bg-sidebar-primary h-1.5 rounded-full animate-pulse w-1/3"></div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-full bg-gray/20 rounded-full h-2">
+                          <div className="bg-brand h-2 rounded-full animate-pulse w-1/3"></div>
                         </div>
-                        <span className="text-xs text-sidebar-foreground/60">Uploading...</span>
+                        <span className="text-small text-gray">Uploading...</span>
                       </div>
                     )}
                     
                     {file.status === 'processing' && (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-full bg-sidebar-border rounded-full h-1.5">
-                          <div className="bg-sidebar-primary h-1.5 rounded-full animate-pulse w-2/3"></div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-full bg-gray/20 rounded-full h-2">
+                          <div className="bg-brand h-2 rounded-full animate-pulse w-2/3"></div>
                         </div>
-                        <span className="text-xs text-sidebar-foreground/60">Processing...</span>
+                        <span className="text-small text-gray">Processing...</span>
                       </div>
                     )}
                     
@@ -234,19 +235,19 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
                         onClick={() => submitFile(file)}
                         disabled={isProcessing}
                         className={cn(
-                          "btn btn-primary w-full h-8 text-xs",
+                          "causa-btn causa-btn-primary w-full",
                           isProcessing && "opacity-50 cursor-not-allowed"
                         )}
                       >
-                        <FileUp className="w-3 h-3 mr-1" />
+                        <FileUp className="w-4 h-4 mr-2" />
                         Analyze Document
                       </button>
                     )}
                     
                     {file.status === 'error' && (
-                      <div className="flex items-center space-x-2 text-destructive">
-                        <AlertCircle className="w-3 h-3" />
-                        <span className="text-xs">{file.error}</span>
+                      <div className="flex items-center space-x-2 text-red-500">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-small">{file.error}</span>
                       </div>
                     )}
                   </div>

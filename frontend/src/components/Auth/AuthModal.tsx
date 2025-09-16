@@ -46,26 +46,26 @@ export function AuthModal({ open, onClose, mode, onModeChange }: AuthModalProps)
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-card text-card-foreground shadow-xl transition-all border border-border">
-                <div className="relative p-6">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-causa-lg bg-white text-dark shadow-xl transition-all border border-gray/20">
+                <div className="relative p-8">
                   <button
                     onClick={onClose}
-                    className="absolute right-4 top-4 btn btn-ghost h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                    className="absolute right-4 top-4 p-1 text-gray hover:text-dark transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                   </button>
 
-                  <div className="mb-6">
+                  <div className="mb-8">
                     <Dialog.Title
                       as="h3"
-                      className="text-2xl font-semibold text-center text-foreground"
+                      className="text-h2 text-center text-dark"
                     >
-                      {mode === 'login' ? 'Welcome back' : 'Create account'}
+                      {mode === 'login' ? 'Welcome back' : 'Join CAUSA AI'}
                     </Dialog.Title>
-                    <p className="text-sm text-muted-foreground text-center mt-2">
+                    <p className="text-body text-gray-dark text-center mt-3">
                       {mode === 'login'
-                        ? 'Sign in to your account to continue'
-                        : 'Sign up to save your conversations'
+                        ? 'Sign in to access your legal analysis history'
+                        : 'Create your account to save legal analysis sessions'
                       }
                     </p>
                   </div>

@@ -27,8 +27,8 @@ function MessageItem({ message, index }: MessageItemProps) {
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       {!isUser && (
-        <div className="flex-shrink-0 mr-3 mt-1">
-          <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
+        <div className="flex-shrink-0 mr-4 mt-1">
+          <div className="w-8 h-8 bg-brand text-white rounded-causa flex items-center justify-center">
             <Bot className="w-4 h-4" />
           </div>
         </div>
@@ -36,16 +36,16 @@ function MessageItem({ message, index }: MessageItemProps) {
       
       <div
         className={cn(
-          "max-w-[80%] rounded-lg px-4 py-3 shadow-sm",
+          "max-w-[80%] rounded-causa-lg shadow-sm",
           isUser
-            ? "bg-primary text-primary-foreground ml-12"
-            : "bg-card text-card-foreground border border-border"
+            ? "causa-message-bubble-user ml-12"
+            : "causa-message-bubble-ai"
         )}
       >
-        <div className="prose prose-sm max-w-none dark:prose-invert">
+        <div className="prose prose-sm max-w-none">
           {message.content.split('\n').map((line, i) => (
             <p key={i} className={cn(
-              "m-0",
+              "m-0 text-body text-dark leading-relaxed",
               i > 0 && "mt-2"
             )}>
               {line || '\u00A0'}
@@ -54,22 +54,22 @@ function MessageItem({ message, index }: MessageItemProps) {
         </div>
         
         <div className={cn(
-          "text-xs mt-2 opacity-70",
-          isUser ? "text-primary-foreground/70" : "text-muted-foreground"
+          "text-small mt-3 opacity-70",
+          isUser ? "text-dark/70" : "text-gray"
         )}>
           {message.timestamp.toLocaleTimeString()}
           {message.isStreaming && (
             <span className="ml-2 inline-flex items-center">
               <div className="w-1 h-1 bg-current rounded-full animate-pulse mr-1" />
-              Streaming...
+              Analyzing...
             </span>
           )}
         </div>
       </div>
       
       {isUser && (
-        <div className="flex-shrink-0 ml-3 mt-1">
-          <div className="w-8 h-8 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center">
+        <div className="flex-shrink-0 ml-4 mt-1">
+          <div className="w-8 h-8 bg-gray-dark text-white rounded-causa flex items-center justify-center">
             <User className="w-4 h-4" />
           </div>
         </div>
@@ -81,18 +81,18 @@ function MessageItem({ message, index }: MessageItemProps) {
 function LoadingMessage() {
   return (
     <div className="flex justify-start mb-6">
-      <div className="flex-shrink-0 mr-3 mt-1">
-        <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
+      <div className="flex-shrink-0 mr-4 mt-1">
+        <div className="w-8 h-8 bg-brand text-white rounded-causa flex items-center justify-center">
           <Brain className="w-4 h-4 animate-pulse" />
         </div>
       </div>
       
-      <div className="bg-card text-card-foreground border border-border rounded-lg px-4 py-3 shadow-sm">
+      <div className="causa-message-bubble-ai">
         <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-          <span className="text-sm text-muted-foreground ml-2">Analyzing...</span>
+          <div className="w-2 h-2 bg-brand rounded-full animate-bounce" />
+          <div className="w-2 h-2 bg-brand rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+          <div className="w-2 h-2 bg-brand rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+          <span className="text-body text-gray ml-2">Analyzing legal content...</span>
         </div>
       </div>
     </div>
@@ -111,15 +111,14 @@ export function MessageList({ messages, loading, isStreaming }: MessageListProps
     return (
       <div className="h-full flex items-center justify-center p-8 overflow-y-auto">
         <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
-            <Bot className="w-8 h-8" />
+          <div className="w-20 h-20 bg-brand/10 text-brand rounded-causa-lg flex items-center justify-center mx-auto mb-6">
+            <Bot className="w-10 h-10" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            Welcome to Legal Analyzer
+          <h3 className="text-h2 text-dark mb-4">
+            Welcome to CAUSA AI
           </h3>
-          <p className="text-muted-foreground">
-            Start by uploading a legal document or asking a question about legal matters.
-            I'm here to help analyze cases, contracts, and legal texts.
+          <p className="text-body text-gray-dark leading-relaxed">
+            Your intelligent legal analysis assistant. Upload legal documents, enter case details, or ask questions about legal matters to get started.
           </p>
         </div>
       </div>
@@ -128,7 +127,7 @@ export function MessageList({ messages, loading, isStreaming }: MessageListProps
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="p-4 space-y-0">
+      <div className="p-6 space-y-0">
         <div className="max-w-4xl mx-auto">
           {messages.map((message, index) => (
             <MessageItem

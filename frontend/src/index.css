@@ -1,44 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda+SC:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens from user prompt */
+/* CAUSA AI Design Tokens */
 @layer base {
   :root {
-    --background: 117 16% 73%;
-    --foreground: 0 0% 25%;
-    --card: 117 16% 73%;
-    --card-foreground: 0 0% 25%;
-    --popover: 0 0% 98%;
-    --popover-foreground: 0 0% 25%;
-    --primary: 0 0% 25%;
-    --primary-foreground: 117 16% 73%;
-    --secondary: 0 0% 98%;
-    --secondary-foreground: 0 0% 25%;
-    --muted: 0 0% 97%;
-    --muted-foreground: 0 0% 56%;
-    --accent: 112 60% 95%;
-    --accent-foreground: 0 0% 25%;
-    --destructive: 27 100% 58%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 98%;
-    --input: 0 0% 98%;
-    --ring: 0 0% 71%;
+    /* CAUSA AI Brand Colors */
+    --causa-brand: #130DDD;
+    --causa-dark: #111111;
+    --causa-light: #FAFAFA;
+    --causa-white: #FFFFFF;
+    --causa-gray: #888888;
+    --causa-gray-dark: #333333;
+    --causa-input-bg: #F0EEFF;
+    
+    /* Legacy shadcn/ui colors for backward compatibility */
+    --background: 250 250 250; /* #FAFAFA */
+    --foreground: 17 17 17; /* #111111 */
+    --card: 255 255 255; /* #FFFFFF */
+    --card-foreground: 17 17 17; /* #111111 */
+    --popover: 255 255 255;
+    --popover-foreground: 17 17 17;
+    --primary: 19 13 221; /* #130DDD */
+    --primary-foreground: 255 255 255;
+    --secondary: 250 250 250;
+    --secondary-foreground: 17 17 17;
+    --muted: 245 245 245;
+    --muted-foreground: 136 136 136; /* #888888 */
+    --accent: 240 238 255; /* #F0EEFF */
+    --accent-foreground: 17 17 17;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 229 229 229;
+    --input: 240 238 255; /* #F0EEFF */
+    --ring: 19 13 221;
     --chart-1: 252 100% 81%;
     --chart-2: 260 100% 62%;
     --chart-3: 263 100% 55%;
     --chart-4: 264 100% 49%;
     --chart-5: 266 100% 42%;
-    --sidebar: 0 0% 98%;
-    --sidebar-foreground: 0 0% 15%;
-    --sidebar-primary: 0 0% 21%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 97%;
-    --sidebar-accent-foreground: 0 0% 21%;
-    --sidebar-border: 0 0% 92%;
-    --sidebar-ring: 0 0% 71%;
+    --sidebar: 250 250 250; /* #FAFAFA */
+    --sidebar-foreground: 17 17 17;
+    --sidebar-primary: 19 13 221;
+    --sidebar-primary-foreground: 255 255 255;
+    --sidebar-accent: 245 245 245;
+    --sidebar-accent-foreground: 17 17 17;
+    --sidebar-border: 229 229 229;
+    --sidebar-ring: 19 13 221;
     
-    --radius: 0.625rem;
+    --radius: 0.5rem;
   }
 }
 
@@ -47,12 +59,77 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-light text-dark font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  h1 {
+    @apply text-h1 text-dark;
+  }
+  
+  h2 {
+    @apply text-h2 text-dark;
   }
 }
 
 @layer components {
+  /* CAUSA AI Component Styles */
+  .causa-btn {
+    @apply inline-flex items-center justify-center whitespace-nowrap rounded-causa-lg text-body font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+  
+  .causa-btn-primary {
+    @apply bg-brand-gradient text-white hover:opacity-90;
+    padding: 12px 16px;
+  }
+  
+  .causa-btn-secondary {
+    @apply bg-white text-dark border border-gray hover:bg-light;
+    padding: 12px 16px;
+  }
+  
+  .causa-input {
+    @apply w-full rounded-causa px-3 py-2 text-body bg-white border border-gray text-dark placeholder:text-gray focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  
+  .causa-input-tinted {
+    @apply causa-input bg-[#F0EEFF];
+  }
+  
+  .causa-textarea {
+    @apply causa-input min-h-[80px] resize-none;
+  }
+  
+  .causa-upload-zone {
+    @apply bg-white border border-dashed border-gray rounded-causa p-4 text-center hover:border-brand transition-colors duration-200;
+  }
+  
+  .causa-message-bubble-user {
+    @apply bg-white text-dark rounded-causa-lg px-3 py-2 shadow-sm;
+    padding: 12px 16px;
+  }
+  
+  .causa-message-bubble-ai {
+    @apply bg-[#F0EEFF] text-dark rounded-causa-lg px-3 py-2;
+    padding: 12px 16px;
+  }
+  
+  .causa-sidebar-auth {
+    @apply bg-light;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 20px,
+      rgba(136, 136, 136, 0.1) 20px,
+      rgba(136, 136, 136, 0.1) 40px
+    );
+  }
+  
+  .causa-logo {
+    @apply font-logo font-bold text-brand uppercase;
+  }
+  
+  /* Legacy shadcn/ui components for backward compatibility */
   .btn {
     @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
@@ -97,69 +174,12 @@
   }
 }
 
-.dark {
-	--background: oklch(0.1450 0 0);
-	--foreground: oklch(0.9850 0 0);
-	--card: oklch(0.2050 0 0);
-	--card-foreground: oklch(0.9850 0 0);
-	--popover: oklch(0.2690 0 0);
-	--popover-foreground: oklch(0.9850 0 0);
-	--primary: oklch(0.9220 0 0);
-	--primary-foreground: oklch(0.2050 0 0);
-	--secondary: oklch(0.2690 0 0);
-	--secondary-foreground: oklch(0.9850 0 0);
-	--muted: oklch(0.2690 0 0);
-	--muted-foreground: oklch(0.7080 0 0);
-	--accent: oklch(0.3710 0 0);
-	--accent-foreground: oklch(0.9850 0 0);
-	--destructive: oklch(0.7040 0.1910 22.2160);
-	--destructive-foreground: oklch(0.9850 0 0);
-	--border: oklch(0.2750 0 0);
-	--input: oklch(0.3250 0 0);
-	--ring: oklch(0.5560 0 0);
-	--chart-1: oklch(0.8100 0.1000 252);
-	--chart-2: oklch(0.6200 0.1900 260);
-	--chart-3: oklch(0.5500 0.2200 263);
-	--chart-4: oklch(0.4900 0.2200 264);
-	--chart-5: oklch(0.4200 0.1800 266);
-	--sidebar: oklch(0.2050 0 0);
-	--sidebar-foreground: oklch(0.9850 0 0);
-	--sidebar-primary: oklch(0.4880 0.2430 264.3760);
-	--sidebar-primary-foreground: oklch(0.9850 0 0);
-	--sidebar-accent: oklch(0.2690 0 0);
-	--sidebar-accent-foreground: oklch(0.9850 0 0);
-	--sidebar-border: oklch(0.2750 0 0);
-	--sidebar-ring: oklch(0.4390 0 0);
-	
-	/* Material-UI compatible color equivalents for dark mode */
-	--mui-background: #252525;
-	--mui-foreground: #fcfcfc;
-	--mui-card: #353535;
-	--mui-primary: #ebebeb;
-	--mui-secondary: #454545;
-	--mui-border: #474747;
-	--mui-muted-foreground: #b5b5b5;
-	
-	--font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-	--font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-	--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-	--radius: 0.625rem;
-	--shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-	--shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-	--shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-	--shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-	--shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
-	--shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
-	--shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
-	--shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
-}
-
 /* Inline theme helpers */
 html, body, #root { height: 100%; }
 * { box-sizing: border-box; }
 body {
-	margin: 0;
-	font-family: var(--font-sans);
-	background: var(--background);
-	color: var(--foreground);
+  margin: 0;
+  font-family: Inter, sans-serif;
+  background: #FAFAFA;
+  color: #111111;
 }

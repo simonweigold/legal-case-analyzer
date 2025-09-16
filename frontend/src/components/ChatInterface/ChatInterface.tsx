@@ -19,7 +19,7 @@ export interface ChatInterfaceProps {
 
 export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) {
   return (
-    <div className="h-full flex flex-col bg-background overflow-hidden">
+    <div className="h-full flex flex-col bg-light overflow-hidden">
       {/* Messages Area - This is the scrollable section */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <MessageList 
@@ -30,7 +30,7 @@ export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) 
       </div>
 
       {/* Input Area - Fixed at bottom */}
-      <div className="flex-shrink-0 p-4 pt-2 border-t border-border">
+      <div className="flex-shrink-0 p-6 pt-4 border-t border-gray-dark/10">
         <InputArea
           input={state.input}
           onInputChange={actions.setInput}
