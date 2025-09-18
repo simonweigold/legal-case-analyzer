@@ -1,22 +1,13 @@
-// components/InputSidebar/InputSidebar.tsx
-import React, { useState, useRef } from 'react';
-import { Upload, FileText, Type } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Textarea } from '../ui/textarea';
+import { useState } from "react";
+import { Upload, FileText, Type } from "lucide-react";
+import { Button } from "./ui/button";
+import { Textarea } from "./ui/textarea";
 
-export interface InputSidebarProps {
-  open: boolean;
-  onToggle: () => void;
-  onTextSubmit: (text: string, source: 'text' | 'pdf', filename?: string) => void;
-  isProcessing?: boolean;
-}
-
-export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = false }: InputSidebarProps) {
+export function FileUploadSidebar() {
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [textInput, setTextInput] = useState("");
   const [hoveredSection, setHoveredSection] = useState<'upload' | 'text' | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -50,16 +41,6 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
     }
   };
 
-  const handleSubmit = () => {
-    if (uploadedFile) {
-      onTextSubmit(`Document: ${uploadedFile}`, 'pdf', uploadedFile);
-      setUploadedFile(null);
-    } else if (textInput.trim()) {
-      onTextSubmit(textInput.trim(), 'text');
-      setTextInput('');
-    }
-  };
-
   const hasContent = uploadedFile || textInput.trim();
 
   return (
@@ -71,7 +52,7 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
           {/* PDF Upload Section */}
           <div
             className={`
-              relative border-2 border-dashed rounded-lg bg-white text-center transition-all duration-300 ease-in-out cursor-pointer
+              relative border-2 border-dashed rounded-lg bg-background text-center transition-all duration-300 ease-in-out cursor-pointer
               ${dragActive 
                 ? 'border-primary bg-primary/5' 
                 : 'border-muted-foreground/30 hover:border-muted-foreground/50'
@@ -85,10 +66,8 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
             onDrop={handleDrop}
             onMouseEnter={() => setHoveredSection('upload')}
             onMouseLeave={() => setHoveredSection(null)}
-            onClick={() => fileInputRef.current?.click()}
           >
             <input
-              ref={fileInputRef}
               type="file"
               accept=".pdf"
               onChange={handleFileInput}
@@ -129,7 +108,7 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
           {/* Text Input Section */}
           <div
             className={`
-              relative border-2 border-dashed rounded-lg bg-white transition-all duration-300 ease-in-out
+              relative border-2 border-dashed rounded-lg bg-background transition-all duration-300 ease-in-out
               border-muted-foreground/30 hover:border-muted-foreground/50
               ${hoveredSection === 'text' ? 'flex-[1.5]' : 'flex-1'}
               ${hoveredSection === 'upload' ? 'flex-[0.5]' : ''}
@@ -157,12 +136,8 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
       </div>
       
       {hasContent && (
-        <Button 
-          className="mt-auto" 
-          onClick={handleSubmit}
-          disabled={isProcessing}
-        >
-          {isProcessing ? 'Analyzing...' : 'Analyze Case'}
+        <Button className="mt-auto">
+          Analyze Case
         </Button>
       )}
     </div>

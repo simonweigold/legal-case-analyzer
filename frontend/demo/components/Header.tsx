@@ -1,19 +1,7 @@
-// components/Navbar/Navbar.tsx
-import React from 'react';
+import { Menu } from "lucide-react";
+import { Button } from "./ui/button";
 
-export interface NavbarProps {
-  sessionId: string | null;
-  onClearSession: () => void;
-  isStreaming: boolean;
-  loading: boolean;
-}
-
-export function Navbar({
-  sessionId,
-  onClearSession,
-  isStreaming,
-  loading
-}: NavbarProps) {
+export function Header() {
   return (
     <header className="border-b border-border bg-background px-6 py-4">
       <div className="flex items-center justify-between">

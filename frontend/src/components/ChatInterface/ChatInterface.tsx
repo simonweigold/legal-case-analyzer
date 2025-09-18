@@ -1,7 +1,6 @@
 // components/ChatInterface/ChatInterface.tsx
 import React from 'react';
-import { MessageList } from './MessageList';
-import { InputArea } from './InputArea';
+import { Textarea } from '../ui/textarea';
 import type { ChatState } from '../../hooks/useChat';
 
 export interface ChatActions {
@@ -19,26 +18,53 @@ export interface ChatInterfaceProps {
 
 export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) {
   return (
-    <div className="h-full flex flex-col bg-light overflow-hidden">
-      {/* Messages Area - This is the scrollable section */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <MessageList 
-          messages={state.messages}
-          loading={state.isLoading}
-          isStreaming={state.isStreaming}
-        />
+    <div className="flex-1 flex flex-col">
+      {/* Messages area - scrollable */}
+      <div className="flex-1 overflow-y-auto p-8 pb-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {state.messages.map((message, index) => (
+            <div key={index}>
+              {message.role === 'user' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                  <p className="leading-relaxed">{message.content}</p>
+                </div>
+              )}
+              {message.role === 'assistant' && (
+                <div className="space-y-4">
+                  <p className="leading-relaxed">{message.content}</p>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {state.isLoading && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <p className="leading-relaxed">Analyzing your request...</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Input Area - Fixed at bottom */}
-      <div className="flex-shrink-0 p-6 pt-4 border-t border-gray-dark/10">
-        <InputArea
-          input={state.input}
-          onInputChange={actions.setInput}
-          onSend={actions.sendMessage}
-          loading={state.isLoading}
-          isStreaming={state.isStreaming}
-          inputRef={inputRef}
-        />
+      {/* Fixed input area at bottom */}
+      <div className="flex-shrink-0 p-8 pt-4 border-t border-border bg-background">
+        <div className="max-w-4xl mx-auto">
+          <Textarea
+            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+            placeholder="Enter your analysis or questions here..."
+            value={state.input}
+            onChange={(e) => actions.setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (state.input.trim() && !state.isLoading && !state.isStreaming) {
+                  actions.sendMessage();
+                }
+              }
+            }}
+            className="min-h-[150px] resize-none flowing-blue-bg flowing-blue-border focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 transition-all duration-200"
+            disabled={state.isLoading || state.isStreaming}
+          />
+        </div>
       </div>
     </div>
   );

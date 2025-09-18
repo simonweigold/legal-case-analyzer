@@ -121,52 +121,44 @@ function AppContent() {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   return (
-    <div className="h-screen overflow-hidden max-w-app mx-auto">
-      {/* Grid layout container with CAUSA AI styling */}
-      <div className="grid grid-cols-[320px_1fr_320px] grid-rows-[auto_1fr] h-full bg-light text-dark">
-        {/* Top navbar spanning all columns */}
-        <header className="col-span-3 border-b border-gray/20 flex-shrink-0 bg-white">
-          <Navbar
-            sessionId={sessionId}
-            onClearSession={clearSession}
-            isStreaming={isStreaming}
-            loading={isLoading}
-          />
-        </header>
-
+    <div className="h-screen flex flex-col bg-background">
+      {/* Header */}
+      <Navbar
+        sessionId={sessionId}
+        onClearSession={clearSession}
+        isStreaming={isStreaming}
+        loading={isLoading}
+      />
+      
+      {/* Main content area */}
+      <div className="flex-1 flex overflow-hidden">
         {/* Left sidebar - Input */}
-        <aside className="border-r border-gray-dark/10 bg-light overflow-hidden">
-          <InputSidebar
-            open={true}
-            onToggle={() => {}}
-            onTextSubmit={handleTextSubmit}
-            isProcessing={isLoading || isStreaming}
-          />
-        </aside>
-
-        {/* Main content area */}
-        <main className="min-w-0 bg-light overflow-hidden">
-          <ChatInterface
-            state={chatState}
-            actions={chatActions}
-            inputRef={inputRef}
-          />
-        </main>
-
+        <InputSidebar
+          open={true}
+          onToggle={() => {}}
+          onTextSubmit={handleTextSubmit}
+          isProcessing={isLoading || isStreaming}
+        />
+        
+        {/* Main chat interface */}
+        <ChatInterface
+          state={chatState}
+          actions={chatActions}
+          inputRef={inputRef}
+        />
+        
         {/* Right sidebar - Conversations */}
-        <aside className="border-l border-gray-dark/10 bg-light overflow-hidden">
-          <Sidebar
-            open={true}
-            onToggle={() => {}} 
-            sessionId={sessionId}
-            onClearSession={clearSession}
-            isStreaming={isStreaming}
-            loading={isLoading}
-            conversations={conversations}
-            onLoadConversation={handleLoadConversation}
-            onDeleteConversation={handleDeleteConversation}
-          />
-        </aside>
+        <Sidebar
+          open={true}
+          onToggle={() => {}} 
+          sessionId={sessionId}
+          onClearSession={clearSession}
+          isStreaming={isStreaming}
+          loading={isLoading}
+          conversations={conversations}
+          onLoadConversation={handleLoadConversation}
+          onDeleteConversation={handleDeleteConversation}
+        />
       </div>
 
       {/* Error Notification */}
