@@ -1,6 +1,6 @@
 // components/Sidebar/Sidebar.tsx
 import React, { useState } from 'react';
-import { X, Search, MessageCircle, User } from "lucide-react";
+import { X, Search, MessageCircle, User, Plus } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ScrollArea } from "../ui/scroll-area";
@@ -89,6 +89,20 @@ export function Sidebar({
             className="pl-10"
           />
         </div>
+      </div>
+
+      {/* New Chat Button */}
+      <div className="p-4 border-b border-border">
+        <Button 
+          onClick={onClearSession}
+          variant="outline"
+          size="sm"
+          className="w-full flex items-center gap-2 justify-center"
+          disabled={isStreaming || loading}
+        >
+          <Plus className="w-4 h-4" />
+          New Chat
+        </Button>
       </div>
 
       <ScrollArea className="flex-1">
