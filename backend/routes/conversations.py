@@ -1,9 +1,9 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from auth import current_active_user
+from auth.auth import current_active_user
 from models.database import User
-from database import get_async_session
+from database.database import get_async_session
 from services.conversation import ConversationService
 from schemas.conversation import (
     ConversationCreate, 

@@ -16,7 +16,7 @@ logger = setup_logging()
 from config import settings
 
 # Import for database initialization
-from database import create_db_and_tables
+from database.database import create_db_and_tables
 
 
 @asynccontextmanager
@@ -76,7 +76,7 @@ async def health_check():
 # Import and setup after app creation to avoid circular imports
 def setup_routes_and_dependencies():
     from langchain_openai import ChatOpenAI
-    from services.tools import get_tools, get_tools_by_name
+    from tools.tools import get_tools, get_tools_by_name
     from utils.workflow import create_workflow
     from routes.auth import router as auth_router
     from routes.conversations import router as conversations_router

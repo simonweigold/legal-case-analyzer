@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
 from schemas.chat import ChatRequest, ChatResponse, StreamChatRequest, ChatHistory
 from schemas.conversation import ChatRequestWithConversation, ChatResponseWithConversation, ConversationResponse, MessageResponse
-from auth import current_active_user
+from auth.auth import current_active_user
 from models.database import User
-from database import get_async_session
+from database.database import get_async_session
 from services.conversation import ConversationService
 
 router = APIRouter(prefix="/chat", tags=["chat"])

@@ -11,7 +11,7 @@ from fastapi_users.authentication import (
 from fastapi_users.db import SQLAlchemyUserDatabase
 
 from models.database import User, UserCreate
-from database import get_user_db
+from database.database import get_user_db
 from config import settings
 
 
