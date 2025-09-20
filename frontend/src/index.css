@@ -4,6 +4,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Set Noto Serif as default font */
+@layer base {
+  * {
+    font-family: 'Noto Serif', serif;
+  }
+}
+
 :root {
   --font-size: 16px;
   --background: #ffffff;

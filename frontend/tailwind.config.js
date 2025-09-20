@@ -6,6 +6,10 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'serif': ['Noto Serif', 'serif'],
+        'logo': ['Bodoni Moda SC', 'serif'],
+      },
       colors: {
         background: "var(--color-background)",
         foreground: "var(--color-foreground)",
