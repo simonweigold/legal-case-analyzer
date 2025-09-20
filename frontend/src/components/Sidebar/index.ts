@@ -1,3 +1,3 @@
 // components/Sidebar/index.ts
-export { Sidebar } from './SidebarClean';
-export type { SidebarProps } from './SidebarClean';
+export { Sidebar } from './Sidebar';
+export type { SidebarProps } from './Sidebar';

@@ -51,7 +51,7 @@ async def health_check():
     """Health check endpoint for monitoring."""
     try:
         # Test database connection
-        from database import async_session_maker
+        from database.database import async_session_maker
         from sqlalchemy import text
         
         async with async_session_maker() as session:

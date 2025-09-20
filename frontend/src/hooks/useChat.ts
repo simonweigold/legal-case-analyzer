@@ -88,7 +88,10 @@ export function useChat() {
   }, [startNewConversation]);
 
   const sendMessage = useCallback(async (content: string, source: 'text' | 'pdf' = 'text', filename?: string) => {
-    if (!content.trim() || isLoading || isStreaming || !isAuthenticated) return;
+    if (!content.trim() || isLoading || isStreaming) return;
+
+    // Allow sending messages even when not authenticated
+    // If not authenticated, messages won't be saved to conversations
 
     // Cancel any previous request
     if (abortControllerRef.current) {
@@ -147,8 +150,8 @@ export function useChat() {
             )
           );
           
-          // Update conversation ID if this was a new conversation
-          if (!conversationId && response.conversation_id) {
+          // Update conversation ID if this was a new conversation and user is authenticated
+          if (!conversationId && response.conversation_id && isAuthenticated) {
             setConversationId(response.conversation_id);
             loadConversations(); // Refresh conversation list
           }
@@ -171,7 +174,7 @@ export function useChat() {
               )
             );
             
-            if (!conversationId && data.conversation_id) {
+            if (!conversationId && data.conversation_id && isAuthenticated) {
               setConversationId(data.conversation_id);
               loadConversations();
             }

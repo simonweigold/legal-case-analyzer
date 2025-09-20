@@ -87,9 +87,10 @@ class ApiService {
 
   // Send a chat message
   async sendMessage(data: ChatRequest): Promise<ChatResponse> {
+    const headers = authService.isAuthenticated() ? this.getAuthHeaders() : { 'Content-Type': 'application/json' };
     const response = await fetch(`${this.baseUrl}/chat/`, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
+      headers,
       body: JSON.stringify(data),
     });
     
@@ -104,14 +105,15 @@ class ApiService {
     onError: (error: Error) => void
   ): Promise<void> {
     try {
+      const headers = authService.isAuthenticated() ? this.getAuthHeaders() : { 'Content-Type': 'application/json' };
       const response = await fetch(`${this.baseUrl}/chat/stream`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
+        headers,
         body: JSON.stringify({ ...data, stream: true }),
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 && authService.isAuthenticated()) {
           authService.clearToken();
           throw new Error('Authentication expired. Please log in again.');
         }
