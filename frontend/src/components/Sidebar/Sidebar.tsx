@@ -1,6 +1,6 @@
 // components/Sidebar/Sidebar.tsx
-import React, { useState } from 'react';
-import { X, Search, MessageCircle, User, Plus } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { X, Search, MessageCircle, User, Plus, Trash2, MoreVertical } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ScrollArea } from "../ui/scroll-area";
@@ -42,16 +42,47 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState("");
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
-  const filteredConversations = conversations.filter(
-    (conv) =>
-      conv.title
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      conv.lastMessage
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase()),
-  );
+  const filteredConversations = conversations
+    .filter(
+      (conv) =>
+        conv.title
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        conv.lastMessage
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()),
+    )
+    .sort((a, b) => {
+      // Sort by updatedAt in descending order (most recent first)
+      const dateA = new Date(a.updatedAt || a.timestamp || 0).getTime();
+      const dateB = new Date(b.updatedAt || b.timestamp || 0).getTime();
+      return dateB - dateA;
+    });
+
+  const handleDeleteConversation = (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the conversation click
+    onDeleteConversation(conversationId);
+    setOpenDropdownId(null);
+  };
+
+  const toggleDropdown = (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the conversation click
+    setOpenDropdownId(openDropdownId === conversationId ? null : conversationId);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenDropdownId(null);
+    };
+
+    if (openDropdownId) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openDropdownId]);
 
   if (!isOpen) {
     return (
@@ -111,18 +142,47 @@ export function Sidebar({
             filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className="p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                className="relative p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
                 onClick={() => onLoadConversation(conversation.id)}
               >
-                <h4 className="mb-1 truncate">
-                  {conversation.title || 'Legal Analysis Session'}
-                </h4>
-                <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                  {conversation.lastMessage || 'No messages yet'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {conversation.updatedAt ? new Date(conversation.updatedAt).toLocaleDateString() : 'Just now'}
-                </p>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="mb-1 truncate">
+                      {conversation.title || 'Legal Analysis Session'}
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                      {conversation.lastMessage || 'No messages yet'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {conversation.updatedAt ? new Date(conversation.updatedAt).toLocaleDateString() : 'Just now'}
+                    </p>
+                  </div>
+                  
+                  {/* Dropdown menu button */}
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => toggleDropdown(conversation.id, e)}
+                      className="p-1 h-6 w-6 text-muted-foreground hover:text-foreground"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                    
+                    {/* Dropdown menu */}
+                    {openDropdownId === conversation.id && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-border rounded-md shadow-lg z-10 min-w-[120px]">
+                        <button
+                          onClick={(e) => handleDeleteConversation(conversation.id, e)}
+                          className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             ))
           ) : (
