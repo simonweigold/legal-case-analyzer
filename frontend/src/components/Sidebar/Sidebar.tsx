@@ -84,6 +84,22 @@ export function Sidebar({
     }
   }, [openDropdownId]);
 
+  const handleLogout = async () => {
+    // Clear the current session first
+    onClearSession();
+    // Then logout the user - this should trigger conversation clearing in parent component
+    await logout();
+  };
+
+  // Clear conversations when user logs out (becomes unauthenticated)
+  useEffect(() => {
+    if (!isAuthenticated && conversations.length > 0) {
+      // If user is not authenticated but still has conversations, clear the session
+      // This helps ensure UI state is consistent
+      onClearSession();
+    }
+  }, [isAuthenticated, conversations.length, onClearSession]);
+
   if (!isOpen) {
     return (
       <Button
@@ -112,28 +128,28 @@ export function Sidebar({
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search Conversations"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search Conversations"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="relative">
+            <Button
+              onClick={onClearSession}
+              variant="outline"
+              size="sm"
+              className="w-full flex items-center gap-2 justify-center mt-3 bg-white"
+              disabled={isStreaming || loading}
+            >
+              <Plus className="w-4 h-4" />
+              New Chat
+            </Button>
+          </div>
         </div>
-      </div>
-
-      {/* New Chat Button */}
-      <div className="p-4 border-b border-border">
-        <Button 
-          onClick={onClearSession}
-          variant="outline"
-          size="sm"
-          className="w-full flex items-center gap-2 justify-center"
-          disabled={isStreaming || loading}
-        >
-          <Plus className="w-4 h-4" />
-          New Chat
-        </Button>
       </div>
 
       <ScrollArea className="flex-1">
@@ -202,7 +218,7 @@ export function Sidebar({
             <div className="flex-1 min-w-0">
               <p className="text-sm truncate">{user.email}</p>
             </div>
-            <Button variant="ghost" size="sm" onClick={logout}>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
               <X className="w-4 h-4" />
             </Button>
           </div>

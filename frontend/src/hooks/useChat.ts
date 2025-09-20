@@ -47,6 +47,20 @@ export function useChat() {
     loadConversations();
   }, [loadConversations]);
 
+  // Clear conversations and messages when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setConversations([]);
+      setMessages([]);
+      setConversationId(null);
+      setError(null);
+      // Cancel any ongoing requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    }
+  }, [isAuthenticated]);
+
   // Convert API message to ChatMessage
   const convertMessage = (msg: Message): ChatMessage => ({
     id: msg.id,
