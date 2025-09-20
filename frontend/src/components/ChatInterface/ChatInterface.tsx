@@ -22,25 +22,40 @@ export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) 
       {/* Messages area - scrollable */}
       <div className="flex-1 overflow-y-auto p-8 pb-4">
         <div className="max-w-4xl mx-auto space-y-6">
-          {state.messages.map((message, index) => (
-            <div key={index}>
-              {message.role === 'user' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <p className="leading-relaxed">{message.content}</p>
-                </div>
-              )}
-              {message.role === 'assistant' && (
-                <div className="space-y-4">
-                  <p className="leading-relaxed">{message.content}</p>
-                </div>
-              )}
+          {state.messages.length === 0 && !state.isLoading ? (
+            <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
+              <div className="space-y-4">
+                <h1 className="h1 text-4xl mb-4">Welcome to CAUSA AI!</h1>
+                <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
+                  Start by uploading a legal case or asking a question
+                  about legal matters. I'm here to analyze cases and
+                  help you understand them better.
+                </p>
+              </div>
             </div>
-          ))}
+          ) : (
+            <>
+              {state.messages.map((message, index) => (
+                <div key={index}>
+                  {message.role === 'user' && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                      <p className="leading-relaxed">{message.content}</p>
+                    </div>
+                  )}
+                  {message.role === 'assistant' && (
+                    <div className="space-y-4">
+                      <p className="leading-relaxed">{message.content}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
 
-          {state.isLoading && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <p className="leading-relaxed">Analyzing your request...</p>
-            </div>
+              {state.isLoading && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                  <p className="leading-relaxed">Analyzing your request...</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
