@@ -177,7 +177,12 @@ async def stream_chat_with_conversation(
                     "You are a helpful AI legal assistant specialized in analyzing legal cases. "
                     "You can help with case analysis, finding precedents, and providing legal insights. "
                     "Always provide thorough and professional responses while noting that your advice "
-                    "should not replace consultation with qualified legal professionals."
+                    "should not replace consultation with qualified legal professionals. "
+                    "\n\nYou have access to tools for legal analysis. When using tools:\n"
+                    "- For analyze_legal_case: provide detailed case information as a string\n"
+                    "- For search_legal_precedents: provide specific legal concepts or terms to search\n"
+                    "- Only use tools when specifically asked to analyze cases or search precedents\n"
+                    "- You can answer general legal questions without using tools"
                 )
                 
                 # Prepare messages for streaming
@@ -203,24 +208,48 @@ async def stream_chat_with_conversation(
                     if hasattr(chunk, 'tool_calls') and chunk.tool_calls:
                         for tool_call in chunk.tool_calls:
                             tool_name = tool_call["name"]
+                            tool_args = tool_call.get("args", {})
+                            logger.info(f"Tool call: {tool_name} with args: {tool_args}")
+                            
                             tool_message = f"Calling tool: {tool_name}"
                             yield f"data: {json.dumps({'content': tool_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool'})}\n\n"
                             
-                            # Execute the tool
+                            # Execute the tool with error handling
                             if tool_name in tools_by_name:
-                                tool_result = tools_by_name[tool_name].invoke(tool_call["args"])
-                                
-                                # Save tool messages to database
-                                await conversation_service.add_message_to_conversation(
-                                    conversation_id=conversation_id,
-                                    role="tool",
-                                    content=json.dumps(tool_result),
-                                    tool_name=tool_name,
-                                    tool_call_id=tool_call["id"]
-                                )
-                                
-                                result_message = f"Tool result: {tool_result}"
-                                yield f"data: {json.dumps({'content': result_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_result'})}\n\n"
+                                try:
+                                    tool_result = tools_by_name[tool_name].invoke(tool_args)
+                                    logger.info(f"Tool {tool_name} executed successfully")
+                                    
+                                    # Save tool messages to database
+                                    await conversation_service.add_message_to_conversation(
+                                        conversation_id=conversation_id,
+                                        role="tool",
+                                        content=json.dumps(tool_result),
+                                        tool_name=tool_name,
+                                        tool_call_id=tool_call["id"]
+                                    )
+                                    
+                                    result_message = f"Tool result: {tool_result}"
+                                    yield f"data: {json.dumps({'content': result_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_result'})}\n\n"
+                                    
+                                except Exception as tool_error:
+                                    logger.error(f"Tool {tool_name} failed: {str(tool_error)}")
+                                    error_message = f"Tool {tool_name} failed: {str(tool_error)}"
+                                    
+                                    # Save error message to database
+                                    await conversation_service.add_message_to_conversation(
+                                        conversation_id=conversation_id,
+                                        role="tool",
+                                        content=f"Error: {str(tool_error)}",
+                                        tool_name=tool_name,
+                                        tool_call_id=tool_call["id"]
+                                    )
+                                    
+                                    yield f"data: {json.dumps({'content': error_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_error'})}\n\n"
+                            else:
+                                logger.warning(f"Tool {tool_name} not found in available tools")
+                                error_message = f"Tool {tool_name} is not available"
+                                yield f"data: {json.dumps({'content': error_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_error'})}\n\n"
 
                 # Save the final AI response to database
                 logger.info(f"LLM streaming completed. Total content length: {len(accumulated_content)}")
