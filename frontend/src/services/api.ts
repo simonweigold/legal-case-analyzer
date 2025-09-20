@@ -148,6 +148,12 @@ class ApiService {
                 onChunk(parsed.content);
               } else if (parsed.type === 'complete') {
                 onComplete(parsed.data);
+              } else if (parsed.type === 'tool' || parsed.type === 'tool_result' || parsed.type === 'tool_error') {
+                // Handle tool messages as content chunks
+                onChunk('\n' + parsed.content + '\n');
+              } else if (parsed.error) {
+                // Handle error messages
+                throw new Error(parsed.error);
               }
             } catch (error) {
               console.error('Error parsing streaming data:', error);

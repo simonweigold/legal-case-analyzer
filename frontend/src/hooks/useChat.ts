@@ -142,13 +142,19 @@ export function useChat() {
         },
         // On complete
         (response) => {
-          setMessages(prev => 
-            prev.map(msg => 
+          setMessages(prev => {
+            const updated = prev.map(msg => 
               msg.id === assistantMessage.id 
-                ? { ...msg, content: response.response, isStreaming: false }
+                ? { 
+                    ...msg, 
+                    // Only update content if response has content, otherwise keep accumulated content
+                    content: response.response && response.response.trim() ? response.response : msg.content,
+                    isStreaming: false 
+                  }
                 : msg
-            )
-          );
+            );
+            return updated;
+          });
           
           // Update conversation ID if this was a new conversation and user is authenticated
           if (!conversationId && response.conversation_id && isAuthenticated) {

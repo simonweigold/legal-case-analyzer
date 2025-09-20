@@ -43,14 +43,20 @@ function MessageItem({ message, index }: MessageItemProps) {
         )}
       >
         <div className="prose prose-sm max-w-none">
-          {message.content.split('\n').map((line, i) => (
-            <p key={i} className={cn(
-              "m-0 text-body text-dark leading-relaxed",
-              i > 0 && "mt-2"
-            )}>
-              {line || '\u00A0'}
+          {message.content && message.content.trim() ? (
+            message.content.split('\n').map((line, i) => (
+              <p key={i} className={cn(
+                "m-0 text-body text-dark leading-relaxed",
+                i > 0 && "mt-2"
+              )}>
+                {line || '\u00A0'}
+              </p>
+            ))
+          ) : (
+            <p className="m-0 text-body text-gray-500 italic">
+              {message.isStreaming ? "Generating response..." : "No response generated"}
             </p>
-          ))}
+          )}
         </div>
         
         <div className={cn(
