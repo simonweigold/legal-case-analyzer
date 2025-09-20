@@ -82,7 +82,7 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
             <label htmlFor="name" className="block text-body text-dark mb-2">
               Full Name (Optional)
@@ -188,7 +188,7 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
           type="submit"
           disabled={isLoading}
           className={cn(
-            "causa-btn causa-btn-primary w-full",
+            "w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-4 py-3 rounded-lg font-medium transition-colors",
             isLoading && "opacity-50 cursor-not-allowed"
           )}
         >

@@ -67,7 +67,7 @@ export function LoginForm({ onSwitchToRegister, onSuccess }: LoginFormProps) {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-body text-dark mb-2">
               Email
@@ -125,7 +125,7 @@ export function LoginForm({ onSwitchToRegister, onSuccess }: LoginFormProps) {
           type="submit"
           disabled={isLoading}
           className={cn(
-            "causa-btn causa-btn-primary w-full",
+            "w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-4 py-3 rounded-lg font-medium transition-colors",
             isLoading && "opacity-50 cursor-not-allowed"
           )}
         >
