@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -8,10 +9,13 @@ from schemas.chat import ChatRequest, ChatResponse, StreamChatRequest, ChatHisto
 from schemas.conversation import ChatRequestWithConversation, ChatResponseWithConversation, ConversationResponse, MessageResponse
 from auth.auth import current_active_user
 from models.database import User
-from database.database import get_async_session
+from database.database import get_async_session, async_session_maker
 from services.conversation import ConversationService
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 # Initialize the language model (will be set by main.py)
 model = None
@@ -41,6 +45,7 @@ async def chat_with_conversation(
     Send a message to the AI assistant with conversation management.
     Creates a new conversation if conversation_id is not provided.
     """
+    logger.info(f"Regular chat request from user {user.id}, conversation_id: {request.conversation_id}")
     try:
         conversation_service = ConversationService(db)
         
@@ -115,103 +120,132 @@ async def chat_with_conversation(
 @router.post("/stream")
 async def stream_chat_with_conversation(
     request: ChatRequestWithConversation,
-    user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session)
+    user: User = Depends(current_active_user)
 ):
     """
     Send a message to the AI assistant with streaming response and conversation management.
     """
     async def generate_stream():
-        try:
-            conversation_service = ConversationService(db)
+        logger.info(f"Starting stream for user {user.id}, conversation_id: {request.conversation_id}")
+        # Create a new session specifically for this streaming operation
+        async with async_session_maker() as db:
+            try:
+                logger.info("Database session created successfully")
+                conversation_service = ConversationService(db)
             
-            # Handle conversation creation or retrieval
-            if request.conversation_id is None:
-                # Create new conversation
-                title = request.conversation_title or f"Chat {request.message[:30]}..."
-                conversation = await conversation_service.create_conversation(
-                    user_id=user.id, 
-                    title=title
-                )
-                conversation_id = conversation.id
-            else:
-                # Verify conversation belongs to user
-                conversation = await conversation_service.get_conversation_by_id(
-                    request.conversation_id, user.id
-                )
-                if not conversation:
-                    yield f"data: {json.dumps({'error': 'Conversation not found', 'done': True, 'type': 'error'})}\n\n"
-                    return
-                conversation_id = conversation.id
+                # Handle conversation creation or retrieval
+                if request.conversation_id is None:
+                    # Create new conversation
+                    logger.info("Creating new conversation")
+                    title = request.conversation_title or f"Chat {request.message[:30]}..."
+                    conversation = await conversation_service.create_conversation(
+                        user_id=user.id, 
+                        title=title
+                    )
+                    conversation_id = conversation.id
+                    logger.info(f"Created conversation with ID: {conversation_id}")
+                else:
+                    # Verify conversation belongs to user
+                    logger.info(f"Retrieving existing conversation: {request.conversation_id}")
+                    conversation = await conversation_service.get_conversation_by_id(
+                        request.conversation_id, user.id
+                    )
+                    if not conversation:
+                        logger.warning(f"Conversation {request.conversation_id} not found for user {user.id}")
+                        yield f"data: {json.dumps({'error': 'Conversation not found', 'done': True, 'type': 'error'})}\n\n"
+                        return
+                    conversation_id = conversation.id
+                    logger.info(f"Using existing conversation ID: {conversation_id}")
 
-            # Get existing messages from conversation
-            db_messages = await conversation_service.get_conversation_messages(conversation_id)
-            langchain_messages = await conversation_service.messages_to_langchain_format(db_messages)
-            
-            # Add new user message
-            await conversation_service.add_message_to_conversation(
-                conversation_id=conversation_id,
-                role="user",
-                content=request.message
-            )
-            langchain_messages.append(HumanMessage(content=request.message))
-
-            # System prompt for legal case analysis context
-            system_prompt = SystemMessage(
-                "You are a helpful AI legal assistant specialized in analyzing legal cases. "
-                "You can help with case analysis, finding precedents, and providing legal insights. "
-                "Always provide thorough and professional responses while noting that your advice "
-                "should not replace consultation with qualified legal professionals."
-            )
-            
-            # Prepare messages for streaming
-            messages_for_llm = [system_prompt] + langchain_messages
-            
-            # Stream directly from the model for token-by-token streaming
-            accumulated_content = ""
-            
-            async for chunk in model.astream(messages_for_llm):
-                if hasattr(chunk, 'content') and chunk.content:
-                    accumulated_content += chunk.content
-                    yield f"data: {json.dumps({'type': 'chunk', 'content': chunk.content, 'conversation_id': conversation_id})}\n\n"
+                # Get existing messages from conversation
+                logger.info(f"Loading messages for conversation {conversation_id}")
+                db_messages = await conversation_service.get_conversation_messages(conversation_id)
+                logger.info(f"Loaded {len(db_messages)} existing messages")
+                langchain_messages = await conversation_service.messages_to_langchain_format(db_messages)
                 
-                # Handle tool calls if present
-                if hasattr(chunk, 'tool_calls') and chunk.tool_calls:
-                    for tool_call in chunk.tool_calls:
-                        tool_name = tool_call["name"]
-                        tool_message = f"Calling tool: {tool_name}"
-                        yield f"data: {json.dumps({'content': tool_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool'})}\n\n"
-                        
-                        # Execute the tool
-                        if tool_name in tools_by_name:
-                            tool_result = tools_by_name[tool_name].invoke(tool_call["args"])
-                            
-                            # Save tool messages to database
-                            await conversation_service.add_message_to_conversation(
-                                conversation_id=conversation_id,
-                                role="tool",
-                                content=json.dumps(tool_result),
-                                tool_name=tool_name,
-                                tool_call_id=tool_call["id"]
-                            )
-                            
-                            result_message = f"Tool result: {tool_result}"
-                            yield f"data: {json.dumps({'content': result_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_result'})}\n\n"
-
-            # Save the final AI response to database
-            if accumulated_content:
+                # Add new user message
+                logger.info(f"Adding user message to conversation {conversation_id}")
                 await conversation_service.add_message_to_conversation(
                     conversation_id=conversation_id,
-                    role="assistant",
-                    content=accumulated_content
+                    role="user",
+                    content=request.message
                 )
+                langchain_messages.append(HumanMessage(content=request.message))
 
-            # Send completion signal
-            yield f"data: {json.dumps({'type': 'complete', 'data': {'response': accumulated_content, 'conversation_id': conversation_id, 'message_id': None}})}\n\n"
+                # System prompt for legal case analysis context
+                system_prompt = SystemMessage(
+                    "You are a helpful AI legal assistant specialized in analyzing legal cases. "
+                    "You can help with case analysis, finding precedents, and providing legal insights. "
+                    "Always provide thorough and professional responses while noting that your advice "
+                    "should not replace consultation with qualified legal professionals."
+                )
+                
+                # Prepare messages for streaming
+                messages_for_llm = [system_prompt] + langchain_messages
+                logger.info(f"Prepared {len(messages_for_llm)} messages for LLM")
+                
+                # Check if model is available
+                if model is None:
+                    logger.error("Model is not initialized!")
+                    yield f"data: {json.dumps({'error': 'Model not available', 'done': True, 'type': 'error'})}\n\n"
+                    return
+                
+                # Stream directly from the model for token-by-token streaming
+                accumulated_content = ""
+                logger.info("Starting LLM streaming...")
+                
+                async for chunk in model.astream(messages_for_llm):
+                    if hasattr(chunk, 'content') and chunk.content:
+                        accumulated_content += chunk.content
+                        yield f"data: {json.dumps({'type': 'chunk', 'content': chunk.content, 'conversation_id': conversation_id})}\n\n"
+                    
+                    # Handle tool calls if present
+                    if hasattr(chunk, 'tool_calls') and chunk.tool_calls:
+                        for tool_call in chunk.tool_calls:
+                            tool_name = tool_call["name"]
+                            tool_message = f"Calling tool: {tool_name}"
+                            yield f"data: {json.dumps({'content': tool_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool'})}\n\n"
+                            
+                            # Execute the tool
+                            if tool_name in tools_by_name:
+                                tool_result = tools_by_name[tool_name].invoke(tool_call["args"])
+                                
+                                # Save tool messages to database
+                                await conversation_service.add_message_to_conversation(
+                                    conversation_id=conversation_id,
+                                    role="tool",
+                                    content=json.dumps(tool_result),
+                                    tool_name=tool_name,
+                                    tool_call_id=tool_call["id"]
+                                )
+                                
+                                result_message = f"Tool result: {tool_result}"
+                                yield f"data: {json.dumps({'content': result_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_result'})}\n\n"
 
-        except Exception as e:
-            # Send error in streaming format
-            yield f"data: {json.dumps({'error': f'Error processing request: {str(e)}', 'done': True, 'type': 'error'})}\n\n"
+                # Save the final AI response to database
+                logger.info(f"LLM streaming completed. Total content length: {len(accumulated_content)}")
+                if accumulated_content:
+                    await conversation_service.add_message_to_conversation(
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=accumulated_content
+                    )
+                    logger.info("AI response saved to database")
+                else:
+                    logger.warning("No content accumulated from LLM!")
+
+                # Send completion signal
+                logger.info("Sending completion signal")
+                yield f"data: {json.dumps({'type': 'complete', 'data': {'response': accumulated_content, 'conversation_id': conversation_id, 'message_id': None}})}\n\n"
+
+            except Exception as e:
+                # Send error in streaming format and ensure proper cleanup
+                logger.error(f"Error in streaming: {str(e)}", exc_info=True)
+                yield f"data: {json.dumps({'error': f'Error processing request: {str(e)}', 'done': True, 'type': 'error'})}\n\n"
+            finally:
+                # Session is automatically closed by the context manager
+                logger.info("Streaming completed, session will be closed")
+                pass
 
     return StreamingResponse(
         generate_stream(),
