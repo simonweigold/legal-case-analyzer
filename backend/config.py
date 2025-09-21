@@ -1,8 +1,20 @@
 import os
+from typing import Optional
 from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
 
 # Load environment variables
 load_dotenv()
+
+def get_llm(model: Optional[str] = None):
+    """
+    Return a ChatOpenAI instance. If `model` is provided, use it; otherwise fallback to env var or default.
+    """
+    selected = model or os.getenv("OPENAI_MODEL") or "gpt-4o-mini"
+    return ChatOpenAI(model=selected, temperature=0)
+
+# Default LLM instance for tools
+llm = get_llm()
 
 class Settings:
     # API Configuration

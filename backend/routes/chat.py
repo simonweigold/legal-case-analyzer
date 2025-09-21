@@ -174,13 +174,10 @@ async def stream_chat_with_conversation(
 
                 # System prompt for legal case analysis context
                 system_prompt = SystemMessage(
-                    "You are a helpful AI legal assistant. You can analyze legal cases and search for precedents when explicitly asked.\n\n"
+                    "You are a helpful AI legal assistant. You can analyze legal cases and use tools for said tasks when explicitly asked.\n\n"
                     "CRITICAL INSTRUCTIONS:\n"
-                    "- For simple greetings, general questions, or casual conversation: respond directly WITHOUT using any tools\n"
-                    "- Only use tools when the user EXPLICITLY asks you to 'analyze this case' or 'search for precedents'\n"
-                    "- If a user just says 'hello', 'hi', or asks general legal questions, answer naturally without tools\n"
-                    "- Most interactions should NOT use tools - they are for specific case analysis only\n\n"
-                    "Be helpful and conversational. Provide legal information from your knowledge without automatically reaching for tools."
+                    "- If a user just says 'hello', 'hi', or asks general legal questions, answer using the welcome tool\n"
+                    "Be helpful and conversational. Provide legal information from your knowledge and using tools."
                 )
                 
                 # Prepare messages for streaming
