@@ -10,7 +10,7 @@ def get_llm(model: Optional[str] = None):
     """
     Return a ChatOpenAI instance. If `model` is provided, use it; otherwise fallback to env var or default.
     """
-    selected = model or os.getenv("OPENAI_MODEL") or "gpt-5-nano"
+    selected = model or os.getenv("OPENAI_MODEL") or "gpt-5-mini"
     return ChatOpenAI(model=selected, temperature=0)
 
 # Default LLM instance for tools
@@ -24,7 +24,7 @@ class Settings:
     PORT = 8000
     
     # Model Configuration
-    MODEL_NAME = "gpt-5-nano"
+    MODEL_NAME = "gpt-5-mini"
     STREAMING = True
     
     # CORS Configuration - Optimized for development
