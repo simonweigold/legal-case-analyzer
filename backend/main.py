@@ -77,6 +77,7 @@ async def health_check():
 def setup_routes_and_dependencies():
     from langchain_openai import ChatOpenAI
     from tools.tools import get_tools, get_tools_by_name
+    from tools.streaming_tools import get_streaming_tools, get_streaming_tools_by_name
     from utils.workflow import create_workflow
     from routes.auth import router as auth_router
     from routes.conversations import router as conversations_router
@@ -85,10 +86,17 @@ def setup_routes_and_dependencies():
     # Initialize the language model
     model = ChatOpenAI(model=settings.MODEL_NAME, streaming=settings.STREAMING)
     
-    # Setup tools
-    tools = get_tools()
-    model = model.bind_tools(tools)
-    tools_by_name = get_tools_by_name()
+    # Setup tools - combine regular and streaming tools
+    regular_tools = get_tools()
+    streaming_tools = get_streaming_tools()
+    all_tools = regular_tools + streaming_tools
+    
+    model = model.bind_tools(all_tools)
+    
+    # Combine tool dictionaries
+    regular_tools_by_name = get_tools_by_name()
+    streaming_tools_by_name = get_streaming_tools_by_name()
+    tools_by_name = {**regular_tools_by_name, **streaming_tools_by_name}
     
     # Set model and tools for chat routes
     set_model_and_tools(model, tools_by_name)

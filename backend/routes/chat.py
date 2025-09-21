@@ -218,8 +218,48 @@ async def stream_chat_with_conversation(
                             # Execute the tool with error handling
                             if tool_name in tools_by_name:
                                 try:
-                                    tool_result = tools_by_name[tool_name].invoke(tool_args)
-                                    logger.info(f"Tool {tool_name} executed successfully")
+                                    # Special handling for streaming analyze legal case
+                                    if tool_name == "streaming_analyze_legal_case":
+                                        yield f"data: {json.dumps({'content': '🔧 Starting comprehensive PIL analysis with step-by-step progress...', 'conversation_id': conversation_id, 'done': False, 'type': 'tool_start'})}\n\n"
+                                        
+                                        # Execute the streaming analysis tool
+                                        tool_result = tools_by_name[tool_name].invoke(tool_args)
+                                        
+                                        # Stream the result line by line to show progress
+                                        result_lines = str(tool_result).split('\n')
+                                        current_section = ""
+                                        
+                                        for line in result_lines:
+                                            if line.startswith('#') or line.startswith('**') or line.startswith('✅') or line.startswith('❌') or line.startswith('🔄'):
+                                                if current_section:
+                                                    # Send the accumulated section
+                                                    yield f"data: {json.dumps({'content': current_section, 'conversation_id': conversation_id, 'done': False, 'type': 'analysis_progress'})}\n\n"
+                                                    current_section = ""
+                                                
+                                                # Start new section
+                                                if line.strip():
+                                                    current_section = line + '\n'
+                                            else:
+                                                if line.strip():
+                                                    current_section += line + '\n'
+                                                elif current_section:
+                                                    # Empty line - send current section
+                                                    yield f"data: {json.dumps({'content': current_section, 'conversation_id': conversation_id, 'done': False, 'type': 'analysis_progress'})}\n\n"
+                                                    current_section = ""
+                                        
+                                        # Send any remaining content
+                                        if current_section:
+                                            yield f"data: {json.dumps({'content': current_section, 'conversation_id': conversation_id, 'done': False, 'type': 'analysis_progress'})}\n\n"
+                                        
+                                        yield f"data: {json.dumps({'content': '🎉 Comprehensive legal analysis completed!', 'conversation_id': conversation_id, 'done': False, 'type': 'analysis_complete'})}\n\n"
+                                    
+                                    else:
+                                        # Regular tool execution
+                                        tool_result = tools_by_name[tool_name].invoke(tool_args)
+                                        logger.info(f"Tool {tool_name} executed successfully")
+                                        
+                                        result_message = f"📋 Tool result: {str(tool_result)[:300]}{'...' if len(str(tool_result)) > 300 else ''}"
+                                        yield f"data: {json.dumps({'content': result_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_result'})}\n\n"
                                     
                                     # Save tool messages to database
                                     await conversation_service.add_message_to_conversation(
@@ -229,9 +269,6 @@ async def stream_chat_with_conversation(
                                         tool_name=tool_name,
                                         tool_call_id=tool_call["id"]
                                     )
-                                    
-                                    result_message = f"📋 Tool result: {str(tool_result)[:300]}{'...' if len(str(tool_result)) > 300 else ''}"
-                                    yield f"data: {json.dumps({'content': result_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_result'})}\n\n"
                                     
                                 except Exception as tool_error:
                                     logger.error(f"Tool {tool_name} failed: {str(tool_error)}")

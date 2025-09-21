@@ -778,66 +778,6 @@ def welcome_user():
             "- Multi-step analytical workflow\n\n"
             "Please provide your legal case details to get started with the analysis!")
 
-@tool
-def search_legal_precedents(query: str = ""):
-    """
-    Search for legal precedents related to a query with PIL focus.
-    
-    Args:
-        query (str): The search query for finding relevant legal precedents.
-                    Include key legal concepts, issues, or case types.
-    
-    Returns:
-        str: Analysis of relevant legal concepts and guidance for precedent research.
-    """
-    if not query or query.strip() == "":
-        return "**Legal Precedent Search: Query Required**\n\nPlease provide a search query to find relevant legal precedents. Include key legal concepts, PIL themes, jurisdictions, or specific choice of law issues you're researching."
-    
-    try:
-        # Analyze the query to provide targeted guidance
-        search_guidance = f"""**Legal Precedent Search Analysis for: "{query}"**
-
-**🔍 Search Strategy Recommendations:**
-
-**Primary Research Areas:**
-- Case law databases for jurisdiction-specific precedents
-- International court decisions (ICJ, PCIJ, regional courts)
-- National supreme court decisions on PIL matters
-- Arbitral awards from major arbitration centers
-
-**Suggested Keywords for Database Search:**
-- Core PIL terms from your query
-- Related jurisdiction names and legal systems
-- Applicable treaties and conventions
-- Specific legal principles identified
-
-**PIL-Specific Resources to Consult:**
-- Hague Conference case law database
-- Conflict of Laws digests and reporters  
-- International legal materials collections
-- Academic PIL casebooks and commentaries
-
-**Analysis Approach:**
-1. Search for cases with similar factual patterns
-2. Look for decisions applying similar PIL principles
-3. Compare reasoning across different jurisdictions
-4. Identify trends in judicial interpretation
-
-**⚠️ Important Notes:**
-- This tool provides research guidance rather than actual case retrieval
-- Access legal databases like Westlaw, LexisNexis, or jurisdiction-specific systems
-- Consider consulting PIL practitioners or academic specialists
-- Verify current validity and authority of located precedents
-
-**Next Steps:**
-Use the jurisdiction detection and theme classification tools to analyze any precedents you find, enabling comparative analysis of different courts' approaches to similar PIL issues."""
-
-        return search_guidance
-        
-    except Exception as e:
-        return f"**Legal Precedent Search: Analysis Error**\n\nUnable to provide search guidance due to technical error: {str(e)}. Please try again with a refined search query."
-
-
 def get_tools():
     """Get all available tools."""
     return [
@@ -848,8 +788,7 @@ def get_tools():
         classify_legal_themes,
         identify_choice_of_law_issue,
         analyze_courts_position,
-        analyze_legal_case,
-        search_legal_precedents
+        analyze_legal_case
     ]
 
 
