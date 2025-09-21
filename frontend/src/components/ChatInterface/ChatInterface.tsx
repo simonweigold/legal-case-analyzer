@@ -25,7 +25,7 @@ export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) 
           {state.messages.length === 0 && !state.isLoading ? (
             <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
               <div className="space-y-4">
-                <h1 className="h1 text-4xl mb-4">Welcome to CAUSA AI!</h1>
+                <h1 className="h1 text-4xl mb-4">Welcome to CAUSA AI</h1>
                 <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
                   Start by uploading a legal case or asking a question
                   about legal matters. I'm here to analyze cases and
