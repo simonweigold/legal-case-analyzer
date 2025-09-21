@@ -65,9 +65,13 @@ export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) 
                 </div>
               ))}
 
-              {state.isLoading && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <p className="leading-relaxed">Analyzing your request...</p>
+              {(state.isLoading || state.isStreaming) && (
+                <div className="flex justify-center py-6">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse-dot-1"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse-dot-2"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse-dot-3"></div>
+                  </div>
                 </div>
               )}
             </>
