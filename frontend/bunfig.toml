@@ -1,2 +1,3 @@
 [serve.static]
+dir = "public"
 env = "BUN_PUBLIC_*"
