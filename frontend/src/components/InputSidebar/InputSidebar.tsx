@@ -168,7 +168,7 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
       
       {hasContent && (
         <Button 
-          className="mt-auto" 
+          className="mt-auto bg-white border text-black hover:bg-blue-50 hover:border-blue-200" 
           onClick={handleSubmit}
           disabled={isProcessing}
         >

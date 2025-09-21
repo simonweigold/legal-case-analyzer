@@ -142,7 +142,7 @@ export function Sidebar({
               onClick={onClearSession}
               variant="outline"
               size="sm"
-              className="w-full flex items-center gap-2 justify-center mt-3 bg-white"
+              className="w-full flex items-center gap-2 justify-center mt-3 bg-white hover:bg-blue-50 hover:border-blue-200"
               disabled={isStreaming || loading}
             >
               <Plus className="w-4 h-4" />
@@ -211,7 +211,7 @@ export function Sidebar({
 
       {isAuthenticated && user ? (
         <div className="border-t border-border p-4 bg-muted/30 diagonal-lines">
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-white">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-white border">
             <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center">
               <User className="w-4 h-4" />
             </div>
@@ -219,7 +219,7 @@ export function Sidebar({
               <p className="text-sm truncate">{user.email}</p>
             </div>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 hover:text-red-500" />
             </Button>
           </div>
         </div>
@@ -228,7 +228,7 @@ export function Sidebar({
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground mb-3">Sign in to save your conversations</p>
             <div className="grid grid-cols-2 gap-4">
-              <div className="grid bg-white">
+              <div className="grid bg-white hover:bg-blue-50 hover:border-blue-200">
                 <Button 
                   variant="outline"
                   size="sm"
@@ -241,7 +241,7 @@ export function Sidebar({
                   Sign In
                 </Button>
               </div>
-              <div className="grid bg-white">
+              <div className="grid bg-white hover:bg-blue-50 hover:border-blue-200">
                 <Button 
                   variant="outline"
                   size="sm"
