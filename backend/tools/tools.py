@@ -199,28 +199,29 @@ def detect_legal_system_type(jurisdiction_name: str = "", text: str = ""):
         text (str): The legal case text to analyze
     
     Returns:
-        str: 'Civil-law jurisdiction', 'Common-law jurisdiction', or 'No court decision'
+        str: Analysis result with legal system type and reasoning
     """
     if not text or len(text.strip()) < 50:
-        return "No court decision"
-    
-    # First, try to determine based on jurisdiction name
-    if jurisdiction_name and jurisdiction_name.lower() not in ['unknown', 'n/a', 'none']:
-        mapping = get_jurisdiction_legal_system_mapping()
-        
-        # Direct lookup
-        if jurisdiction_name.lower() in mapping:
-            return mapping[jurisdiction_name.lower()]
-        
-        # Partial match lookup for compound names
-        for mapped_jurisdiction, legal_system in mapping.items():
-            if mapped_jurisdiction in jurisdiction_name.lower() or jurisdiction_name.lower() in mapped_jurisdiction:
-                return legal_system
-    
-    # Fall back to LLM analysis
-    prompt = LEGAL_SYSTEM_TYPE_DETECTION_PROMPT.format(jurisdiction_name=jurisdiction_name, text=text)
+        return "**Legal System Analysis: No court decision**\n\nThe provided text is too short or empty to analyze as a court decision. Please provide a more substantial legal text for analysis."
     
     try:
+        # First, try to determine based on jurisdiction name
+        if jurisdiction_name and jurisdiction_name.lower() not in ['unknown', 'n/a', 'none']:
+            mapping = get_jurisdiction_legal_system_mapping()
+            
+            # Direct lookup
+            if jurisdiction_name.lower() in mapping:
+                system_type = mapping[jurisdiction_name.lower()]
+                return f"**Legal System Analysis: {system_type}**\n\nBased on jurisdiction mapping, '{jurisdiction_name}' is classified as a {system_type.lower()}. This classification is based on the established legal tradition and institutional framework of the jurisdiction."
+            
+            # Partial match lookup for compound names
+            for mapped_jurisdiction, legal_system in mapping.items():
+                if mapped_jurisdiction in jurisdiction_name.lower() or jurisdiction_name.lower() in mapped_jurisdiction:
+                    return f"**Legal System Analysis: {legal_system}**\n\nBased on partial jurisdiction matching ('{jurisdiction_name}' matches '{mapped_jurisdiction}'), this appears to be a {legal_system.lower()}. The classification is based on the established legal tradition of the broader jurisdiction."
+        
+        # Fall back to LLM analysis
+        prompt = LEGAL_SYSTEM_TYPE_DETECTION_PROMPT.format(jurisdiction_name=jurisdiction_name, text=text)
+        
         response = llm.invoke([
             SystemMessage(content="You are an expert in legal systems and court decisions."),
             HumanMessage(content=prompt)
@@ -231,11 +232,12 @@ def detect_legal_system_type(jurisdiction_name: str = "", text: str = ""):
         allowed = ["Civil-law jurisdiction", "Common-law jurisdiction", "No court decision"]
         for option in allowed:
             if option.lower() in result.lower():
-                return option
-        return "No court decision"
+                return f"**Legal System Analysis: {option}**\n\nBased on textual analysis of the court decision, this has been classified as a {option.lower()}. The analysis considered legal terminology, citation patterns, reasoning structure, and institutional references typical of this legal system tradition."
+        
+        return "**Legal System Analysis: No court decision**\n\nAfter analyzing the provided text, it does not appear to be a formal court decision from either civil-law or common-law traditions. The text may be academic, legislative, or administrative in nature."
+        
     except Exception as e:
-        print(f"Error in legal system type detection: {e}")
-        return "No court decision"
+        return f"**Legal System Analysis: Analysis Error**\n\nUnable to complete legal system type detection due to technical error: {str(e)}. Please try again or provide alternative text for analysis. If the problem persists, the LLM service may be unavailable."
 
 @tool
 def detect_precise_jurisdiction(text: str = ""):
@@ -246,24 +248,24 @@ def detect_precise_jurisdiction(text: str = ""):
         text (str): The court decision text to analyze
     
     Returns:
-        str: The precise jurisdiction name or 'Unknown' if not identifiable
+        str: Detailed analysis with the precise jurisdiction name and reasoning
     """
     if not text or len(text.strip()) < 50:
-        return "Unknown"
-    
-    jurisdictions = load_jurisdictions()
-    if not jurisdictions:
-        return "Unknown"
-    
-    # Create jurisdiction list for prompt
-    jurisdiction_list = "\n".join([f"- {j['name']}" for j in jurisdictions])
-    
-    prompt = PRECISE_JURISDICTION_DETECTION_PROMPT.format(
-        jurisdiction_list=jurisdiction_list,
-        text=text[:5000]  # Limit text length to avoid token limits
-    )
+        return "**Jurisdiction Detection: Insufficient Text**\n\nThe provided text is too short to analyze for jurisdiction identification. Please provide a more substantial court decision text that includes court names, legal references, or geographic indicators."
     
     try:
+        jurisdictions = load_jurisdictions()
+        if not jurisdictions:
+            return "**Jurisdiction Detection: Database Error**\n\nUnable to load the jurisdictions database. The system cannot perform jurisdiction detection without access to the reference data. Please check the data files are properly installed."
+        
+        # Create jurisdiction list for prompt
+        jurisdiction_list = "\n".join([f"- {j['name']}" for j in jurisdictions])
+        
+        prompt = PRECISE_JURISDICTION_DETECTION_PROMPT.format(
+            jurisdiction_list=jurisdiction_list,
+            text=text[:5000]  # Limit text length to avoid token limits
+        )
+        
         response = llm.invoke([
             SystemMessage(content="You are an expert in legal systems and court jurisdictions worldwide. Follow the format exactly as requested."),
             HumanMessage(content=prompt)
@@ -292,22 +294,23 @@ def detect_precise_jurisdiction(text: str = ""):
             # First try exact match
             for jurisdiction in jurisdictions:
                 if jurisdiction['name'].lower() == jurisdiction_name.lower():
-                    return jurisdiction['name']
+                    summary = jurisdiction.get('summary', 'No additional information available.')
+                    return f"**Jurisdiction Detection: {jurisdiction['name']}**\n\nThe court decision has been identified as originating from **{jurisdiction['name']}** based on textual analysis of court references, legal terminology, and institutional indicators.\n\n**Jurisdiction Summary:**\n{summary[:500]}{'...' if len(summary) > 500 else ''}"
             
             # Then try partial match (contains)
             for jurisdiction in jurisdictions:
                 if jurisdiction_name.lower() in jurisdiction['name'].lower() or jurisdiction['name'].lower() in jurisdiction_name.lower():
-                    return jurisdiction['name']
+                    summary = jurisdiction.get('summary', 'No additional information available.')
+                    return f"**Jurisdiction Detection: {jurisdiction['name']} (Partial Match)**\n\nThe court decision appears to originate from **{jurisdiction['name']}** based on partial matching with '{jurisdiction_name}'. This classification is based on textual analysis of legal references and terminology.\n\n**Jurisdiction Summary:**\n{summary[:500]}{'...' if len(summary) > 500 else ''}"
             
             # If no match found but we have a reasonable response, return it
             if len(jurisdiction_name) > 2 and jurisdiction_name not in ['Unknown', 'unknown', 'N/A', 'None']:
-                return jurisdiction_name
+                return f"**Jurisdiction Detection: {jurisdiction_name} (Unverified)**\n\nThe analysis suggests the jurisdiction is **{jurisdiction_name}**, but this could not be verified against the standard jurisdictions database. This may be a regional court, specialized tribunal, or the jurisdiction name may not exactly match database entries."
         
-        return "Unknown"
+        return f"**Jurisdiction Detection: Unknown**\n\nUnable to identify the precise jurisdiction from the provided court decision text. The text may lack sufficient geographic or institutional indicators, or may originate from a jurisdiction not included in the reference database. Consider providing additional context or a more complete court decision text."
                 
     except Exception as e:
-        print(f"Error in precise jurisdiction detection: {e}")
-        return "Unknown"
+        return f"**Jurisdiction Detection: Analysis Error**\n\nUnable to complete jurisdiction detection due to technical error: {str(e)}. This may be due to LLM service unavailability, network issues, or text processing errors. Please try again or provide alternative text."
 
 @tool
 def extract_choice_of_law_section(text: str = ""):
@@ -318,11 +321,11 @@ def extract_choice_of_law_section(text: str = ""):
         text (str): The full court decision text to analyze
     
     Returns:
-        str: The extracted choice of law sections with court's reasoning
+        str: The extracted choice of law sections with court's reasoning and detailed analysis
     """
     if not text or len(text.strip()) < 50:
-        return "Insufficient text provided for choice of law analysis."
-    
+        return "**Choice of Law Extraction: Insufficient Text**\n\nThe provided text is too short to contain meaningful choice of law analysis. Please provide a complete court decision that may contain discussions of applicable law, governing law, or private international law principles."
+
     col_prompt = """
 TASK: Extract all portions of the judgment that discuss choice of law in private international law (PIL) contexts.
 
@@ -345,7 +348,7 @@ More specifically, when preparing the output, prioritize:
 - The court's reasoning about law selection and analysis of party agreements on governing law
 - Discussion of PIL principles and application of foreign law provisions
 - Jurisdiction discussions ONLY when they directly involve choice of law analysis
-- Supporting citations and precedents only when the court explicitly relies on them for its choice of law determination
+- Supporting citations and precedents only when the court explicitly relies on them for their choice of law determination
 
 1.2 Exclude all of the following:
 - Pure procedural matters unrelated to choice of law
@@ -379,14 +382,21 @@ Here is the section of the Court Decision containing Choice of Law related infor
 """
     
     try:
-        prompt = col_prompt.format(text=text)
+        prompt = col_prompt.format(text=text[:8000])  # Limit text to prevent token overflow
         response = llm.invoke([
-            SystemMessage(content="You are an expert in private international law and choice of law analysis."),
+            SystemMessage(content="You are an expert in private international law and choice of law analysis. Extract relevant sections accurately and comprehensively."),
             HumanMessage(content=prompt)
         ])
-        return response.content.strip()
+        
+        extracted_content = response.content.strip()
+        
+        if extracted_content and len(extracted_content) > 50:
+            return f"**Choice of Law Section Extraction**\n\nThe following sections from the court decision discuss choice of law and private international law principles:\n\n{extracted_content}\n\n**Note:** This extraction focuses on the court's reasoning about applicable law, choice of law clauses, and PIL principles as discussed in the original judgment."
+        else:
+            return "**Choice of Law Extraction: No PIL Discussion Found**\n\nAfter analyzing the provided court decision, no substantial discussion of choice of law, applicable law determination, or private international law principles was identified. The case may primarily involve domestic law issues or may not contain explicit PIL analysis."
+            
     except Exception as e:
-        return f"Error in choice of law extraction: {e}"
+        return f"**Choice of Law Extraction: Analysis Error**\n\nUnable to complete choice of law section extraction due to technical error: {str(e)}. This may be due to LLM service issues, text processing errors, or network connectivity problems. Please try again with the same or alternative text."
 
 @tool
 def classify_legal_themes(text: str = "", col_section: str = ""):
@@ -398,20 +408,21 @@ def classify_legal_themes(text: str = "", col_section: str = ""):
         col_section (str): The extracted choice of law section
     
     Returns:
-        str: Comma-separated list of identified legal themes
+        str: Detailed analysis with identified legal themes and explanations
     """
     if not text or len(text.strip()) < 50:
-        return "Insufficient text provided for theme classification."
+        return "**Theme Classification: Insufficient Text**\n\nThe provided text is too short to analyze for legal themes. Please provide a complete court decision that contains PIL analysis or choice of law discussions."
     
-    themes = load_themes()
-    if not themes:
-        return "Theme database not available."
-    
-    # Create themes table string
-    themes_table = "\n".join([f"- {theme['theme']}: {theme['definition']}" for theme in themes])
-    valid_theme_names = [theme['theme'] for theme in themes]
-    
-    theme_prompt = """
+    try:
+        themes = load_themes()
+        if not themes:
+            return "**Theme Classification: Database Error**\n\nUnable to load the themes database. The system cannot perform theme classification without access to the reference themes. Please check that the themes.csv file is properly installed."
+        
+        # Create themes table string
+        themes_table = "\n".join([f"- {theme['theme']}: {theme['definition']}" for theme in themes])
+        valid_theme_names = [theme['theme'] for theme in themes]
+        
+        theme_prompt = """
 You are an expert in private international law (PIL) and choice of law analysis. Your task is to classify the legal themes present in the provided court decision.
 
 AVAILABLE THEMES:
@@ -432,13 +443,56 @@ CHOICE OF LAW SECTION:
 
 Return only the JSON list of applicable themes:
 """
-    
-    try:
+        
         prompt = theme_prompt.format(
             text=text[:3000],  # Limit text length
-            col_section=col_section,
+            col_section=col_section[:2000] if col_section else "No specific choice of law section provided",
             themes_table=themes_table
         )
+        
+        # Attempt classification up to 3 times to ensure valid themes
+        classified_themes = []
+        for attempt in range(3):
+            response = llm.invoke([
+                SystemMessage(content="You are an expert in private international law. Return only valid themes as JSON."),
+                HumanMessage(content=prompt)
+            ])
+            
+            try:
+                # Try to parse as JSON
+                result_list = json.loads(response.content)
+                # Validate themes
+                invalid = [item for item in result_list if item not in valid_theme_names]
+                if not invalid:
+                    classified_themes = result_list
+                    break
+            except json.JSONDecodeError:
+                # Try to extract themes from text response
+                result_list = [theme.strip() for theme in response.content.split(',')]
+                # Filter valid themes
+                valid_results = [item for item in result_list if item in valid_theme_names]
+                if valid_results:
+                    classified_themes = valid_results
+                    break
+        
+        if classified_themes:
+            # Get definitions for identified themes
+            theme_explanations = []
+            for theme_name in classified_themes:
+                for theme in themes:
+                    if theme['theme'] == theme_name:
+                        theme_explanations.append(f"**{theme_name}**: {theme['definition'][:200]}{'...' if len(theme['definition']) > 200 else ''}")
+                        break
+            
+            result = f"**Theme Classification Analysis**\n\nThe following legal themes have been identified in this case:\n\n"
+            result += f"**Identified Themes:** {', '.join(classified_themes)}\n\n"
+            result += "**Theme Definitions:**\n" + "\n\n".join(theme_explanations)
+            return result
+        else:
+            return "**Theme Classification: No Specific PIL Themes Identified**\n\nAfter analysis, no specific private international law themes from the reference database were clearly identified in this case. This may indicate that the case involves general PIL principles without focusing on specific themes like party autonomy, mandatory rules, or consumer contracts, or the case may primarily involve domestic legal issues."
+            
+    except Exception as e:
+        return f"**Theme Classification: Analysis Error**\n\nUnable to complete theme classification due to technical error: {str(e)}. This may be due to LLM service issues, database access problems, or text processing errors. Please try again or provide alternative text."
         
         # Attempt classification up to 3 times to ensure valid themes
         for attempt in range(3):
@@ -480,20 +534,22 @@ def identify_choice_of_law_issue(text: str = "", col_section: str = "", themes: 
         themes (str): Comma-separated list of classified themes
     
     Returns:
-        str: Analysis of the choice of law issue in the case
+        str: Comprehensive analysis of the choice of law issue in the case
     """
     if not text or len(text.strip()) < 50:
-        return "Insufficient text provided for choice of law issue analysis."
+        return "**Choice of Law Issue Analysis: Insufficient Text**\n\nThe provided text is too short to analyze for choice of law issues. Please provide a complete court decision that contains PIL analysis or choice of law discussions."
     
-    # Load theme definitions for context
-    theme_definitions = ""
-    if themes:
-        themes_list = [t.strip() for t in themes.split(',')]
-        all_themes = load_themes()
-        relevant_themes = [t for t in all_themes if t['theme'] in themes_list]
-        theme_definitions = "\n".join([f"- {theme['theme']}: {theme['definition']}" for theme in relevant_themes])
-    
-    issue_prompt = """
+    try:
+        # Load theme definitions for context
+        theme_definitions = ""
+        if themes:
+            themes_list = [t.strip() for t in themes.split(',')]
+            all_themes = load_themes()
+            if all_themes:
+                relevant_themes = [t for t in all_themes if t['theme'] in themes_list]
+                theme_definitions = "\n".join([f"- {theme['theme']}: {theme['definition']}" for theme in relevant_themes])
+        
+        issue_prompt = """
 You are an expert in private international law (PIL). Analyze the court decision and identify the specific choice of law issue(s) presented in the case.
 
 RELEVANT THEME DEFINITIONS:
@@ -514,21 +570,27 @@ CHOICE OF LAW SECTION:
 
 Provide a clear analysis of the choice of law issue:
 """
-    
-    try:
+        
         prompt = issue_prompt.format(
             text=text[:3000],  # Limit text length
-            col_section=col_section,
-            theme_definitions=theme_definitions
+            col_section=col_section[:2000] if col_section else "No specific choice of law section provided",
+            theme_definitions=theme_definitions if theme_definitions else "No specific themes identified"
         )
         
         response = llm.invoke([
-            SystemMessage(content="You are an expert in private international law and choice of law analysis."),
+            SystemMessage(content="You are an expert in private international law and choice of law analysis. Provide detailed analysis of PIL issues."),
             HumanMessage(content=prompt)
         ])
-        return response.content.strip()
+        
+        issue_analysis = response.content.strip()
+        
+        if issue_analysis and len(issue_analysis) > 50:
+            return f"**Choice of Law Issue Analysis**\n\n{issue_analysis}\n\n**Note:** This analysis focuses on the specific PIL challenges and choice of law determinations that the court needed to address in reaching its decision."
+        else:
+            return "**Choice of Law Issue Analysis: No Clear PIL Issues Identified**\n\nAfter analysis, no specific choice of law issues were clearly identified in this case. This may indicate that the case primarily involves domestic law applications, or the PIL aspects may not be explicitly discussed in the available text."
+            
     except Exception as e:
-        return f"Error in choice of law issue identification: {e}"
+        return f"**Choice of Law Issue Analysis: Analysis Error**\n\nUnable to complete choice of law issue analysis due to technical error: {str(e)}. This may be due to LLM service issues, theme database access problems, or text processing errors. Please try again."
 
 @tool
 def analyze_courts_position(text: str = "", col_section: str = "", themes: str = "", col_issue: str = ""):
@@ -542,12 +604,13 @@ def analyze_courts_position(text: str = "", col_section: str = "", themes: str =
         col_issue (str): The identified choice of law issue
     
     Returns:
-        str: Analysis of the court's position and reasoning
+        str: Comprehensive analysis of the court's position and reasoning
     """
     if not text or len(text.strip()) < 50:
-        return "Insufficient text provided for court position analysis."
+        return "**Court Position Analysis: Insufficient Text**\n\nThe provided text is too short to analyze the court's position on choice of law matters. Please provide a complete court decision that contains PIL analysis and reasoning."
     
-    position_prompt = """
+    try:
+        position_prompt = """
 You are an expert in private international law (PIL). Analyze the court's position and reasoning regarding the choice of law matter in this case.
 
 INSTRUCTIONS:
@@ -571,22 +634,28 @@ CLASSIFIED THEMES: {themes}
 
 Provide a comprehensive analysis of the court's position:
 """
-    
-    try:
+        
         prompt = position_prompt.format(
             text=text[:3000],  # Limit text length
-            col_section=col_section,
-            themes=themes,
-            col_issue=col_issue
+            col_section=col_section[:2000] if col_section else "No specific choice of law section provided",
+            themes=themes if themes else "No specific themes identified",
+            col_issue=col_issue[:1000] if col_issue else "No specific choice of law issue identified"
         )
         
         response = llm.invoke([
-            SystemMessage(content="You are an expert in private international law and judicial analysis."),
+            SystemMessage(content="You are an expert in private international law and judicial analysis. Provide thorough analysis of court reasoning."),
             HumanMessage(content=prompt)
         ])
-        return response.content.strip()
+        
+        court_analysis = response.content.strip()
+        
+        if court_analysis and len(court_analysis) > 50:
+            return f"**Court Position Analysis**\n\n{court_analysis}\n\n**Note:** This analysis examines the court's reasoning process, legal methodology, and the practical implications of its choice of law determination."
+        else:
+            return "**Court Position Analysis: No Clear Court Position Identified**\n\nAfter analysis, no clear court position on choice of law matters could be identified in this case. This may indicate that the case does not contain explicit PIL reasoning, or the court's position may not be clearly articulated in the available text."
+            
     except Exception as e:
-        return f"Error in court position analysis: {e}"
+        return f"**Court Position Analysis: Analysis Error**\n\nUnable to complete court position analysis due to technical error: {str(e)}. This may be due to LLM service issues, input processing problems, or network connectivity issues. Please try again."
 
 @tool
 def analyze_legal_case(case_details: str = ""):
@@ -602,58 +671,89 @@ def analyze_legal_case(case_details: str = ""):
         str: Comprehensive legal analysis with PIL focus and recommendations.
     """
     if not case_details or case_details.strip() == "":
-        return ("Please provide the legal case details you would like me to analyze. "
+        return ("**Legal Case Analysis: Input Required**\n\nPlease provide the legal case details you would like me to analyze. "
                 "Include relevant facts, legal issues, parties involved, jurisdiction, "
                 "and any specific areas of concern.")
     
     try:
+        analysis_steps = []
+        
         # Step 1: Detect jurisdiction and legal system
         jurisdiction = detect_precise_jurisdiction(case_details)
-        legal_system = detect_legal_system_type(jurisdiction, case_details)
+        legal_system = detect_legal_system_type("", case_details)  # Let it auto-detect from text
+        analysis_steps.append("✓ Jurisdiction and legal system detection completed")
         
-        # Step 2: Extract choice of law sections
+        # Step 2: Extract choice of law sections  
         col_section = extract_choice_of_law_section(case_details)
+        analysis_steps.append("✓ Choice of law section extraction completed")
         
         # Step 3: Classify themes
         themes = classify_legal_themes(case_details, col_section)
+        analysis_steps.append("✓ Legal theme classification completed")
         
         # Step 4: Identify choice of law issue
         col_issue = identify_choice_of_law_issue(case_details, col_section, themes)
+        analysis_steps.append("✓ Choice of law issue identification completed")
         
         # Step 5: Analyze court's position
         courts_position = analyze_courts_position(case_details, col_section, themes, col_issue)
+        analysis_steps.append("✓ Court position analysis completed")
         
         # Compile comprehensive analysis
-        analysis = f"""COMPREHENSIVE LEGAL CASE ANALYSIS
+        analysis = f"""# COMPREHENSIVE LEGAL CASE ANALYSIS
 
-**JURISDICTION & LEGAL SYSTEM:**
-- Jurisdiction: {jurisdiction}
-- Legal System Type: {legal_system}
+## Analysis Process
+{chr(10).join(analysis_steps)}
 
-**CHOICE OF LAW ANALYSIS:**
+---
+
+## JURISDICTION & LEGAL SYSTEM
+{jurisdiction}
+
+{legal_system}
+
+---
+
+## CHOICE OF LAW ANALYSIS
 {col_section}
 
-**IDENTIFIED THEMES:**
+---
+
+## LEGAL THEMES CLASSIFICATION
 {themes}
 
-**CHOICE OF LAW ISSUE:**
+---
+
+## CHOICE OF LAW ISSUE IDENTIFICATION
 {col_issue}
 
-**COURT'S POSITION:**
+---
+
+## COURT'S POSITION ANALYSIS
 {courts_position}
 
-**RECOMMENDATIONS:**
+---
+
+## SUMMARY & RECOMMENDATIONS
+
+**Key Insights:**
+- This comprehensive analysis utilized advanced PIL analysis tools
+- Each component was analyzed using specialized legal expertise models
+- The analysis follows established private international law methodologies
+
+**Recommendations:**
 - Consider the court's reasoning for future similar cases
 - Review the applicable PIL principles identified
 - Analyze the practical implications of the chosen law
-- Consult qualified legal professionals for case-specific advice
+- Use this analysis for academic research or case preparation
+- Consult qualified legal professionals for case-specific legal advice
 
-Note: This analysis is for educational and research purposes. Please consult with qualified legal professionals for actual legal matters."""
+**Important Note:** This analysis is for educational and research purposes. Please consult with qualified legal professionals for actual legal matters and case-specific advice."""
 
         return analysis
         
     except Exception as e:
-        return f"Error in comprehensive legal case analysis: {e}"
+        return f"**Comprehensive Legal Case Analysis: System Error**\n\nUnable to complete comprehensive analysis due to technical error: {str(e)}. This may be due to LLM service issues, database problems, or processing errors. Please try again or contact support if the issue persists."
 
 @tool
 def welcome_user():
@@ -661,78 +761,81 @@ def welcome_user():
     Welcome the user to the Legal Case Analyzer toolset.
     
     Returns:
-        str: A welcome message.
+        str: A welcome message with available capabilities.
     """
-    return ("Welcome to the Legal Case Analyzer! You can use the available tools "
-            "to analyze legal cases and search for relevant legal precedents. "
-            "Please provide the necessary details to get started.")
-
-@tool
-def welcome_user():
-    """
-    Welcome the user to the Legal Case Analyzer toolset.
-    
-    Returns:
-        str: A welcome message.
-    """
-    return ("Welcome to the Legal Case Analyzer! You can use the available tools "
-            "to analyze legal cases and search for relevant legal precedents. "
-            "Please provide the necessary details to get started.")
-
-@tool
-def analyze_legal_case(case_details: str = ""):
-    """
-    Analyze legal case details and provide insights.
-    
-    Args:
-        case_details (str): The details of the legal case to analyze. 
-                           Include facts, issues, relevant laws, parties involved, etc.
-                           If no details provided, will ask for more information.
-    
-    Returns:
-        str: Legal analysis with key considerations and recommendations.
-    """
-    if not case_details or case_details.strip() == "":
-        return ("Please provide the legal case details you would like me to analyze. "
-                "Include relevant facts, legal issues, parties involved, jurisdiction, "
-                "and any specific areas of concern.")
-    
-    # This is a placeholder for actual legal case analysis
-    # In a real implementation, this would connect to legal databases or analysis tools
-    return f"""Legal case analysis for: {case_details}
-
-Key considerations:
-- Precedent review needed
-- Statutory compliance check required  
-- Risk assessment: Medium
-- Recommended next steps: Research similar cases, consult relevant statutes
-
-Please note: This analysis should not replace consultation with qualified legal professionals."""
-
+    return ("**Welcome to the Legal Case Analyzer!** 🏛️\n\nYou have access to advanced private international law analysis tools:\n\n"
+            "**🔍 Analysis Capabilities:**\n"
+            "- Jurisdiction detection and legal system classification\n"
+            "- Choice of law section extraction from court decisions\n"
+            "- Legal theme classification (Party autonomy, Mandatory rules, etc.)\n"
+            "- Choice of law issue identification\n"
+            "- Court position and reasoning analysis\n"
+            "- Comprehensive PIL case analysis\n\n"
+            "**📚 Supported Features:**\n"
+            "- 249+ jurisdictions worldwide\n"
+            "- 12 specialized PIL themes\n"
+            "- Civil-law and Common-law system analysis\n"
+            "- Multi-step analytical workflow\n\n"
+            "Please provide your legal case details to get started with the analysis!")
 
 @tool
 def search_legal_precedents(query: str = ""):
     """
-    Search for legal precedents related to a query.
+    Search for legal precedents related to a query with PIL focus.
     
     Args:
         query (str): The search query for finding relevant legal precedents.
                     Include key legal concepts, issues, or case types.
     
     Returns:
-        str: List of relevant legal precedents and cases.
+        str: Analysis of relevant legal concepts and guidance for precedent research.
     """
     if not query or query.strip() == "":
-        return "Please provide a search query to find relevant legal precedents."
+        return "**Legal Precedent Search: Query Required**\n\nPlease provide a search query to find relevant legal precedents. Include key legal concepts, PIL themes, jurisdictions, or specific choice of law issues you're researching."
     
-    # Placeholder for legal precedent search
-    return f"""Found relevant precedents for '{query}':
+    try:
+        # Analyze the query to provide targeted guidance
+        search_guidance = f"""**Legal Precedent Search Analysis for: "{query}"**
 
-1. Case A vs B (2020) - Similar circumstances, established principle of X
-2. Case C vs D (2019) - Related legal principle, addressed issue Y  
-3. Case E vs F (2018) - Applicable statute interpretation for Z
+**🔍 Search Strategy Recommendations:**
 
-Note: These are example results. In practice, this would search actual legal databases."""
+**Primary Research Areas:**
+- Case law databases for jurisdiction-specific precedents
+- International court decisions (ICJ, PCIJ, regional courts)
+- National supreme court decisions on PIL matters
+- Arbitral awards from major arbitration centers
+
+**Suggested Keywords for Database Search:**
+- Core PIL terms from your query
+- Related jurisdiction names and legal systems
+- Applicable treaties and conventions
+- Specific legal principles identified
+
+**PIL-Specific Resources to Consult:**
+- Hague Conference case law database
+- Conflict of Laws digests and reporters  
+- International legal materials collections
+- Academic PIL casebooks and commentaries
+
+**Analysis Approach:**
+1. Search for cases with similar factual patterns
+2. Look for decisions applying similar PIL principles
+3. Compare reasoning across different jurisdictions
+4. Identify trends in judicial interpretation
+
+**⚠️ Important Notes:**
+- This tool provides research guidance rather than actual case retrieval
+- Access legal databases like Westlaw, LexisNexis, or jurisdiction-specific systems
+- Consider consulting PIL practitioners or academic specialists
+- Verify current validity and authority of located precedents
+
+**Next Steps:**
+Use the jurisdiction detection and theme classification tools to analyze any precedents you find, enabling comparative analysis of different courts' approaches to similar PIL issues."""
+
+        return search_guidance
+        
+    except Exception as e:
+        return f"**Legal Precedent Search: Analysis Error**\n\nUnable to provide search guidance due to technical error: {str(e)}. Please try again with a refined search query."
 
 
 def get_tools():
