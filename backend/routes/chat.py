@@ -29,6 +29,30 @@ def set_model_and_tools(llm_model, tools_dict):
     tools_by_name = tools_dict
 
 
+def create_model_with_selected_tools(selected_tools=None):
+    """Create a model instance with only the selected tools."""
+    from langchain_openai import ChatOpenAI
+    from config import settings
+    
+    if selected_tools is None:
+        # Return the default model with all tools
+        return model
+    
+    # Filter tools by name
+    filtered_tools = []
+    for tool_name in selected_tools:
+        if tool_name in tools_by_name:
+            filtered_tools.append(tools_by_name[tool_name])
+    
+    # If no valid tools selected, return model with no tools
+    if not filtered_tools:
+        return ChatOpenAI(model=settings.MODEL_NAME, streaming=settings.STREAMING)
+    
+    # Create new model instance with selected tools
+    new_model = ChatOpenAI(model=settings.MODEL_NAME, streaming=settings.STREAMING)
+    return new_model.bind_tools(filtered_tools)
+
+
 def get_graph(request: Request):
     """Dependency to get the graph from app state."""
     return request.app.state.graph
@@ -190,11 +214,21 @@ async def stream_chat_with_conversation(
                     yield f"data: {json.dumps({'error': 'Model not available', 'done': True, 'type': 'error'})}\n\n"
                     return
                 
+                # Create model with selected tools if specified
+                active_model = create_model_with_selected_tools(request.tools)
+                logger.info(f"Using model with tools: {request.tools if request.tools else 'all tools'}")
+                
+                # Get available tools for this request
+                available_tools = tools_by_name
+                if request.tools:
+                    available_tools = {name: tool for name, tool in tools_by_name.items() if name in request.tools}
+                    logger.info(f"Filtered to {len(available_tools)} tools: {list(available_tools.keys())}")
+                
                 # Stream directly from the model for token-by-token streaming
                 accumulated_content = ""
                 logger.info("Starting LLM streaming...")
                 
-                async for chunk in model.astream(messages_for_llm):
+                async for chunk in active_model.astream(messages_for_llm):
                     if hasattr(chunk, 'content') and chunk.content:
                         accumulated_content += chunk.content
                         yield f"data: {json.dumps({'type': 'chunk', 'content': chunk.content, 'conversation_id': conversation_id})}\n\n"
@@ -216,14 +250,14 @@ async def stream_chat_with_conversation(
                             yield f"data: {json.dumps({'content': tool_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool'})}\n\n"
                             
                             # Execute the tool with error handling
-                            if tool_name in tools_by_name:
+                            if tool_name in available_tools:
                                 try:
                                     # Special handling for streaming analyze legal case
                                     if tool_name == "streaming_analyze_legal_case":
                                         yield f"data: {json.dumps({'content': '🔧 Starting comprehensive PIL analysis with step-by-step progress...', 'conversation_id': conversation_id, 'done': False, 'type': 'tool_start'})}\n\n"
                                         
                                         # Execute the streaming analysis tool
-                                        tool_result = tools_by_name[tool_name].invoke(tool_args)
+                                        tool_result = available_tools[tool_name].invoke(tool_args)
                                         
                                         # Stream the result line by line to show progress
                                         result_lines = str(tool_result).split('\n')
@@ -255,7 +289,7 @@ async def stream_chat_with_conversation(
                                     
                                     else:
                                         # Regular tool execution
-                                        tool_result = tools_by_name[tool_name].invoke(tool_args)
+                                        tool_result = available_tools[tool_name].invoke(tool_args)
                                         logger.info(f"Tool {tool_name} executed successfully")
                                         
                                         result_message = f"📋 Tool result: {str(tool_result)[:300]}{'...' if len(str(tool_result)) > 300 else ''}"

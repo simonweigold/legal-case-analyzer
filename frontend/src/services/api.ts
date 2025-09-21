@@ -23,7 +23,9 @@ export interface Message {
 export interface ChatRequest {
   message: string;
   conversation_id?: string;
+  conversation_title?: string;
   stream?: boolean;
+  tools?: string[];
 }
 
 export interface ChatResponse {
@@ -88,10 +90,17 @@ class ApiService {
   // Send a chat message
   async sendMessage(data: ChatRequest): Promise<ChatResponse> {
     const headers = authService.isAuthenticated() ? this.getAuthHeaders() : { 'Content-Type': 'application/json' };
+    const body = {
+      message: data.message,
+      conversation_id: data.conversation_id,
+      conversation_title: data.conversation_title,
+      ...(data.tools && { tools: data.tools })
+    };
+    
     const response = await fetch(`${this.baseUrl}/chat/`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(data),
+      body: JSON.stringify(body),
     });
     
     return this.handleResponse<ChatResponse>(response);
@@ -106,10 +115,18 @@ class ApiService {
   ): Promise<void> {
     try {
       const headers = authService.isAuthenticated() ? this.getAuthHeaders() : { 'Content-Type': 'application/json' };
+      const body = {
+        message: data.message,
+        conversation_id: data.conversation_id,
+        conversation_title: data.conversation_title,
+        stream: true,
+        ...(data.tools && { tools: data.tools })
+      };
+      
       const response = await fetch(`${this.baseUrl}/chat/stream`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ ...data, stream: true }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {

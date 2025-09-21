@@ -71,7 +71,7 @@ function AppContent() {
     }
   }, [authError]);
 
-  const handleTextSubmit = (text: string, source: 'text' | 'pdf', filename?: string) => {
+  const handleTextSubmit = (text: string, source: 'text' | 'pdf', filename?: string, tools?: string[]) => {
     // Format the input with source information
     let formattedInput = '';
     if (source === 'pdf' && filename) {
@@ -80,7 +80,7 @@ function AppContent() {
       formattedInput = `${text}\n\nPlease analyze this legal text.`;
     }
 
-    sendMessage(formattedInput, source, filename);
+    sendMessage(formattedInput, source, filename, tools);
   };
 
   const handleSendMessage = async () => {

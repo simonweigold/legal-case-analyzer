@@ -40,6 +40,7 @@ class ChatRequestWithConversation(BaseModel):
     message: str
     conversation_id: Optional[int] = None  # If None, create new conversation
     conversation_title: Optional[str] = None  # For new conversations
+    tools: Optional[List[str]] = None  # List of tool names to use for analysis
 
 
 class ChatResponseWithConversation(BaseModel):

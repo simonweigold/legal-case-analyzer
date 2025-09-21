@@ -82,6 +82,7 @@ def setup_routes_and_dependencies():
     from routes.auth import router as auth_router
     from routes.conversations import router as conversations_router
     from routes.chat import router as chat_router, set_model_and_tools
+    from routes.tools import router as tools_router
     
     # Initialize the language model
     model = ChatOpenAI(model=settings.MODEL_NAME, streaming=settings.STREAMING)
@@ -111,6 +112,7 @@ def setup_routes_and_dependencies():
     app.include_router(auth_router)
     app.include_router(conversations_router)
     app.include_router(chat_router)
+    app.include_router(tools_router)
 
 # Setup routes and dependencies
 setup_routes_and_dependencies()

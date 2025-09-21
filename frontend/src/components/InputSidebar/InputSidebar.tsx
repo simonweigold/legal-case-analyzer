@@ -3,11 +3,12 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, Type } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
+import { ToolSelector } from './ToolSelector';
 
 export interface InputSidebarProps {
   open: boolean;
   onToggle: () => void;
-  onTextSubmit: (text: string, source: 'text' | 'pdf', filename?: string) => void;
+  onTextSubmit: (text: string, source: 'text' | 'pdf', filename?: string, tools?: string[]) => void;
   isProcessing?: boolean;
 }
 
@@ -16,6 +17,7 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [textInput, setTextInput] = useState("");
   const [hoveredSection, setHoveredSection] = useState<'upload' | 'text' | null>(null);
+  const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -52,10 +54,10 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
 
   const handleSubmit = () => {
     if (uploadedFile) {
-      onTextSubmit(`Document: ${uploadedFile}`, 'pdf', uploadedFile);
+      onTextSubmit(`Document: ${uploadedFile}`, 'pdf', uploadedFile, selectedTools);
       setUploadedFile(null);
     } else if (textInput.trim()) {
-      onTextSubmit(textInput.trim(), 'text');
+      onTextSubmit(textInput.trim(), 'text', undefined, selectedTools);
       setTextInput('');
     }
   };
@@ -154,6 +156,14 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Tool Selection */}
+      <div className="mb-6">
+        <ToolSelector
+          selectedTools={selectedTools}
+          onToolsChange={setSelectedTools}
+        />
       </div>
       
       {hasContent && (

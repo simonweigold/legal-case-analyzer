@@ -101,7 +101,7 @@ export function useChat() {
     startNewConversation();
   }, [startNewConversation]);
 
-  const sendMessage = useCallback(async (content: string, source: 'text' | 'pdf' = 'text', filename?: string) => {
+  const sendMessage = useCallback(async (content: string, source: 'text' | 'pdf' = 'text', filename?: string, tools?: string[]) => {
     if (!content.trim() || isLoading || isStreaming) return;
 
     // Allow sending messages even when not authenticated
@@ -143,6 +143,7 @@ export function useChat() {
         {
           message: content,
           conversation_id: conversationId || undefined,
+          ...(tools && tools.length > 0 && { tools })
         },
         // On chunk received
         (chunk: string) => {
@@ -184,6 +185,7 @@ export function useChat() {
           apiService.sendMessage({
             message: content,
             conversation_id: conversationId || undefined,
+            ...(tools && tools.length > 0 && { tools })
           })
           .then((data) => {
             setMessages(prev => 
