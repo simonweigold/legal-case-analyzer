@@ -106,25 +106,13 @@ export function ToolSelector({ selectedTools, onToolsChange, className = "" }: T
     <div className={`p-4 border rounded-lg bg-white ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Wrench className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium">Analysis Tools</span>
           <span className="text-xs text-muted-foreground">
             ({selectedCount}/{totalCount} selected)
           </span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs px-2 py-1 h-auto"
-        >
-          {expanded ? 'Hide' : 'Show'}
-        </Button>
       </div>
-
-      {expanded && (
-        <>
-          <div className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-3">
             <Button
               variant="outline"
               size="sm"
@@ -145,7 +133,7 @@ export function ToolSelector({ selectedTools, onToolsChange, className = "" }: T
             </Button>
           </div>
 
-          <div className="space-y-3 max-h-48 overflow-y-auto">
+          <div className="space-y-3 max-h-96 overflow-y-auto">
             {regularTools.length > 0 && (
               <div>
                 <h4 className="text-xs font-medium text-muted-foreground mb-2">
@@ -215,16 +203,12 @@ export function ToolSelector({ selectedTools, onToolsChange, className = "" }: T
               ⚠️ No tools selected. The AI will only use general knowledge.
             </div>
           )}
-        </>
-      )}
 
-      {!expanded && selectedCount > 0 && (
-        <div className="text-xs text-muted-foreground">
-          {selectedCount === totalCount 
-            ? "All tools selected" 
+        <div className="mt-4 text-xs text-muted-foreground">
+          {selectedCount === totalCount
+            ? "All tools selected"
             : `${selectedTools.slice(0, 3).map(name => name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')}${selectedCount > 3 ? ` and ${selectedCount - 3} more` : ''}`}
         </div>
-      )}
     </div>
   );
 }
