@@ -47,6 +47,21 @@ export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) 
                       <p className="leading-relaxed">{message.content}</p>
                     </div>
                   )}
+                  {message.role === 'tool' && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-6 h-6 bg-gray-500 text-white rounded text-xs flex items-center justify-center font-medium">
+                            T
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-700 mb-1">Tool Usage</p>
+                          <p className="text-sm leading-relaxed text-gray-600">{message.content}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
 

@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 export interface ChatMessage {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'tool';
   timestamp: Date;
   isStreaming?: boolean;
 }

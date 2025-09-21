@@ -22,14 +22,6 @@ export interface AppConfig {
   description: string;
 }
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  joinedDate: string;
-}
-
 // types/index.ts
 // User types
 export interface User {
@@ -61,7 +53,7 @@ export interface Message {
   id: string;
   conversation_id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'tool';
   timestamp: string;
   metadata?: Record<string, any>;
 }
@@ -70,7 +62,7 @@ export interface Message {
 export interface ChatMessage {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'tool';
   timestamp: Date;
   isStreaming?: boolean;
 }
