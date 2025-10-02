@@ -12,7 +12,9 @@ export const LandingPage: React.FC = () => {
         <div className="grid grid-cols-[1fr_3fr] border border-gray-200 w-full h-full">
             <div className="">
                 <div className="grid grid-rows-[1fr_2fr] divide-y divide-gray-200 h-full">
-                  <div className="p-2 text-2xl flex flex-center">Welcome to CAUSA AI,<br />an agentic AI web app<br />for analyzing court decisions<br />with ease</div>
+                  <div className="p-4 text-2xl h-full flex items-center justify-center leading-snug">
+                    Welcome to CAUSA AI,<br />an agentic AI web app<br />for analyzing court decisions<br />with ease
+                  </div>
                     <div className="p-2 bg-muted/30 diagonal-lines">Column 1 Row 2 Shaded</div>
                 </div>
             </div>
