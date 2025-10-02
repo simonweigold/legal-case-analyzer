@@ -1,5 +1,6 @@
 // App.tsx
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LandingPage } from './components/Landing/LandingPage';
 import { ChatInterface } from './components/ChatInterface';
 import { Sidebar } from './components/Sidebar';
@@ -172,11 +173,18 @@ function AppContent() {
 }
 
 function App() {
-  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const showLanding = path === '/landing';
   return (
     <AuthProvider>
-      {showLanding ? <LandingPage /> : <AppContent />}
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/causa" element={<AppContent />} />
+          {/* Legacy support: if someone navigates to /landing redirect to root */}
+          <Route path="/landing" element={<Navigate to="/" replace />} />
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   );
 }
