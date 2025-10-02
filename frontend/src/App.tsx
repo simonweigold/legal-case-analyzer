@@ -1,5 +1,6 @@
 // App.tsx
 import React, { useState, useEffect } from 'react';
+import { LandingPage } from './components/Landing/LandingPage';
 import { ChatInterface } from './components/ChatInterface';
 import { Sidebar } from './components/Sidebar';
 import { InputSidebar } from './components/InputSidebar';
@@ -171,9 +172,11 @@ function AppContent() {
 }
 
 function App() {
+  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const showLanding = path === '/landing';
   return (
     <AuthProvider>
-      <AppContent />
+      {showLanding ? <LandingPage /> : <AppContent />}
     </AuthProvider>
   );
 }
