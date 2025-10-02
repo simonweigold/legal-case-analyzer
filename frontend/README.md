@@ -6,24 +6,47 @@
 - [ ] User authentication and log in feature
 - [ ] Conversation histories for authenticated users
 
-# bun-react-template
+# Frontend Dev (migrated from Bun to Vite + npm)
 
-To install dependencies:
+## Getting Started
 
-```bash
-bun install
-```
-
-To start a development server:
+Install dependencies:
 
 ```bash
-bun dev
+npm install
 ```
 
-To run for production:
+Run dev server (Vite):
 
 ```bash
-bun start
+npm run dev
 ```
 
-This project was created using `bun init` in bun v1.2.18. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+Build for production:
+
+```bash
+npm run build
+```
+
+Preview the production build locally:
+
+```bash
+npm run preview
+```
+
+## Notes
+
+- Bun-specific server (`src/index.tsx`) replaced by standard React entry `src/main.tsx`.
+- `index.html` moved to project root per Vite convention.
+- Removed `bun.lock`, `bunfig.toml`, and Bun scripts.
+- Tailwind setup unchanged (processing now goes through Vite/PostCSS instead of Bun build).
+- Ensure Node.js >= 18.
+
+If you previously installed with Bun, remove old artifacts:
+
+```bash
+rm -rf node_modules bun.lock bun.lockb
+npm install
+```
+
+Happy hacking!
