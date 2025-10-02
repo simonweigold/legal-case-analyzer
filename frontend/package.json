@@ -11,16 +11,21 @@
     "start": "NODE_ENV=production bun src/index.tsx"
   },
   "dependencies": {
-  "react": "^19",
-  "react-dom": "^19",
-  "@mui/material": "^6",
-  "@mui/icons-material": "^6",
-  "@emotion/react": "^11",
-  "@emotion/styled": "^11"
+    "@headlessui/react": "^2.0.0",
+    "@heroicons/react": "^2.1.0",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.263.1",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-router-dom": "^7.9.3",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3"
   }
 }

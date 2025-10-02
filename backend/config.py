@@ -1,8 +1,20 @@
 import os
+from typing import Optional
 from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
 
 # Load environment variables
 load_dotenv()
+
+def get_llm(model: Optional[str] = None):
+    """
+    Return a ChatOpenAI instance. If `model` is provided, use it; otherwise fallback to env var or default.
+    """
+    selected = model or os.getenv("OPENAI_MODEL") or "gpt-5-mini"
+    return ChatOpenAI(model=selected, temperature=0)
+
+# Default LLM instance for tools
+llm = get_llm()
 
 class Settings:
     # API Configuration
@@ -12,13 +24,13 @@ class Settings:
     PORT = 8000
     
     # Model Configuration
-    MODEL_NAME = "gpt-4o-mini"
+    MODEL_NAME = "gpt-5-mini"
     STREAMING = True
     
-    # CORS Configuration
-    CORS_ORIGINS = ["*"]  # Development: allow all; tighten for production
-    CORS_CREDENTIALS = False
-    CORS_METHODS = ["*"]
+    # CORS Configuration - Optimized for development
+    CORS_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"]
+    CORS_CREDENTIALS = True
+    CORS_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
     CORS_HEADERS = ["*"]
     
     # Database Configuration

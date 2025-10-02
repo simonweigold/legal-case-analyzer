@@ -88,6 +88,7 @@ class AuthService {
     const formData = new FormData();
     formData.append('username', data.username);
     formData.append('password', data.password);
+    formData.append('grant_type', 'password');
 
     const response = await fetch(`${this.baseUrl}/auth/jwt/login`, {
       method: 'POST',

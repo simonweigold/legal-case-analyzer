@@ -1,19 +1,8 @@
 // components/Auth/LoginForm.tsx
 import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Alert,
-  Paper,
-  Link,
-  InputAdornment,
-  IconButton,
-  CircularProgress
-} from '@mui/material';
-import { Visibility, VisibilityOff, Login as LoginIcon } from '@mui/icons-material';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { cn } from '../../lib/utils';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -70,87 +59,100 @@ export function LoginForm({ onSwitchToRegister, onSuccess }: LoginFormProps) {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4, maxWidth: 400, mx: 'auto' }}>
-      <Box component="form" onSubmit={handleSubmit}>
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <LoginIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
-          <Typography variant="h5" component="h1" gutterBottom>
-            Sign In
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Sign in to access your legal case analyses
-          </Typography>
-        </Box>
-
+    <div>
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
+          <div className="bg-red-50 border border-red-200 rounded-causa p-4">
+            <p className="text-small text-red-600">{error}</p>
+          </div>
         )}
 
-        <TextField
-          fullWidth
-          label="Email"
-          type="email"
-          value={formData.username}
-          onChange={handleChange('username')}
-          error={!!formErrors.username}
-          helperText={formErrors.username}
-          margin="normal"
-          required
-          autoComplete="email"
-          autoFocus
-        />
+        <div className="space-y-6">
+          <div>
+            <label htmlFor="email" className="block text-body text-dark mb-2">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={formData.username}
+              onChange={handleChange('username')}
+              className={cn(
+                "causa-input w-full",
+                formErrors.username && "border-red-500"
+              )}
+              placeholder="Enter your email"
+              disabled={isLoading}
+            />
+            {formErrors.username && (
+              <p className="text-small text-red-500 mt-1">{formErrors.username}</p>
+            )}
+          </div>
 
-        <TextField
-          fullWidth
-          label="Password"
-          type={showPassword ? 'text' : 'password'}
-          value={formData.password}
-          onChange={handleChange('password')}
-          error={!!formErrors.password}
-          helperText={formErrors.password}
-          margin="normal"
-          required
-          autoComplete="current-password"
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={() => setShowPassword(!showPassword)}
-                  edge="end"
-                >
-                  {showPassword ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+          <div>
+            <label htmlFor="password" className="block text-body text-dark mb-2">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={handleChange('password')}
+                className={cn(
+                  "causa-input w-full pr-12",
+                  formErrors.password && "border-red-500"
+                )}
+                placeholder="Enter your password"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray hover:text-dark"
+                disabled={isLoading}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {formErrors.password && (
+              <p className="text-small text-red-500 mt-1">{formErrors.password}</p>
+            )}
+          </div>
+        </div>
 
-        <Button
+        <button
           type="submit"
-          fullWidth
-          variant="contained"
           disabled={isLoading}
-          sx={{ mt: 3, mb: 2, height: 48 }}
+          className={cn(
+            "w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-4 py-3 rounded-lg font-medium transition-colors",
+            isLoading && "opacity-50 cursor-not-allowed"
+          )}
         >
-          {isLoading ? <CircularProgress size={24} /> : 'Sign In'}
-        </Button>
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              Signing in...
+            </div>
+          ) : (
+            'Sign In'
+          )}
+        </button>
 
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="body2">
+        <div className="text-center">
+          <p className="text-body text-gray-dark">
             Don't have an account?{' '}
-            <Link
-              component="button"
+            <button
               type="button"
               onClick={onSwitchToRegister}
-              sx={{ textDecoration: 'none' }}
+              className="text-brand font-medium hover:underline"
+              disabled={isLoading}
             >
-              Sign up
-            </Link>
-          </Typography>
-        </Box>
-      </Box>
-    </Paper>
+              Create account
+            </button>
+          </p>
+        </div>
+      </form>
+    </div>
   );
 }

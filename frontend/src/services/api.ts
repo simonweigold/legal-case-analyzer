@@ -15,7 +15,7 @@ export interface Message {
   id: string;
   conversation_id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'tool';
   timestamp: string;
   metadata?: Record<string, any>;
 }
@@ -23,7 +23,9 @@ export interface Message {
 export interface ChatRequest {
   message: string;
   conversation_id?: string;
+  conversation_title?: string;
   stream?: boolean;
+  tools?: string[];
 }
 
 export interface ChatResponse {
@@ -87,10 +89,18 @@ class ApiService {
 
   // Send a chat message
   async sendMessage(data: ChatRequest): Promise<ChatResponse> {
+    const headers = authService.isAuthenticated() ? this.getAuthHeaders() : { 'Content-Type': 'application/json' };
+    const body = {
+      message: data.message,
+      conversation_id: data.conversation_id,
+      conversation_title: data.conversation_title,
+      ...(data.tools && { tools: data.tools })
+    };
+    
     const response = await fetch(`${this.baseUrl}/chat/`, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(data),
+      headers,
+      body: JSON.stringify(body),
     });
     
     return this.handleResponse<ChatResponse>(response);
@@ -104,14 +114,23 @@ class ApiService {
     onError: (error: Error) => void
   ): Promise<void> {
     try {
+      const headers = authService.isAuthenticated() ? this.getAuthHeaders() : { 'Content-Type': 'application/json' };
+      const body = {
+        message: data.message,
+        conversation_id: data.conversation_id,
+        conversation_title: data.conversation_title,
+        stream: true,
+        ...(data.tools && { tools: data.tools })
+      };
+      
       const response = await fetch(`${this.baseUrl}/chat/stream`, {
         method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify({ ...data, stream: true }),
+        headers,
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 && authService.isAuthenticated()) {
           authService.clearToken();
           throw new Error('Authentication expired. Please log in again.');
         }
@@ -146,6 +165,12 @@ class ApiService {
                 onChunk(parsed.content);
               } else if (parsed.type === 'complete') {
                 onComplete(parsed.data);
+              } else if (parsed.type === 'tool' || parsed.type === 'tool_result' || parsed.type === 'tool_error') {
+                // Handle tool messages as content chunks
+                onChunk('\n' + parsed.content + '\n');
+              } else if (parsed.error) {
+                // Handle error messages
+                throw new Error(parsed.error);
               }
             } catch (error) {
               console.error('Error parsing streaming data:', error);

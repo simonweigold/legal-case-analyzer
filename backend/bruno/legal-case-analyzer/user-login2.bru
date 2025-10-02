@@ -1,0 +1,20 @@
+meta {
+  name: user-login2
+  type: http
+  seq: 13
+}
+
+post {
+  url: http://localhost:8000/auth/jwt/login
+  body: formUrlEncoded
+  auth: inherit
+}
+
+body:form-urlencoded {
+  username: admin
+  password: admin123
+}
+
+settings {
+  encodeUrl: true
+}

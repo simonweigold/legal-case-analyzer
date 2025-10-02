@@ -1,15 +1,45 @@
 // App.tsx
-import React, { useState } from 'react';
-import { ThemeProvider, CssBaseline, Box, Alert, Snackbar } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { LandingPage } from './components/Landing/LandingPage';
 import { ChatInterface } from './components/ChatInterface';
 import { Sidebar } from './components/Sidebar';
 import { InputSidebar } from './components/InputSidebar';
+import { Navbar } from './components/Navbar';
 import { useChat } from './hooks/useChat';
-import { useTheme } from './hooks/useTheme';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { cn } from './lib/utils';
+
+// Error Notification Component
+function ErrorNotification({ error, onClose }: { error: string | null; onClose: () => void }) {
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(onClose, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, onClose]);
+
+  if (!error) return null;
+
+  return (
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
+      <div className="bg-red-500 text-white px-4 py-3 rounded-causa shadow-lg border border-red-500/20">
+        <div className="flex items-center justify-between">
+          <span className="text-small font-medium">{error}</span>
+          <button
+            onClick={onClose}
+            className="ml-3 text-white/80 hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AppContent() {
-  const { theme, darkMode, toggleDarkMode } = useTheme();
   const {
     messages,
     isLoading,
@@ -26,25 +56,23 @@ function AppContent() {
   
   const { isAuthenticated, error: authError } = useAuth();
   
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [inputSidebarOpen, setInputSidebarOpen] = useState(false);
   const [errorSnackbar, setErrorSnackbar] = useState<string | null>(null);
   const [input, setInput] = useState('');
 
-  // Show error in snackbar
-  React.useEffect(() => {
+  // Show error in notification
+  useEffect(() => {
     if (error) {
       setErrorSnackbar(error);
     }
   }, [error]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (authError) {
       setErrorSnackbar(authError);
     }
   }, [authError]);
 
-  const handleTextSubmit = (text: string, source: 'text' | 'pdf', filename?: string) => {
+  const handleTextSubmit = (text: string, source: 'text' | 'pdf', filename?: string, tools?: string[]) => {
     // Format the input with source information
     let formattedInput = '';
     if (source === 'pdf' && filename) {
@@ -53,8 +81,7 @@ function AppContent() {
       formattedInput = `${text}\n\nPlease analyze this legal text.`;
     }
 
-    sendMessage(formattedInput, source, filename);
-    setInputSidebarOpen(false); // Close input sidebar after submission
+    sendMessage(formattedInput, source, filename, tools);
   };
 
   const handleSendMessage = async () => {
@@ -66,7 +93,6 @@ function AppContent() {
 
   const handleLoadConversation = (conversationId: string) => {
     loadConversation(conversationId);
-    setSidebarOpen(false); // Close sidebar on mobile after loading
   };
 
   const handleDeleteConversation = (conversationId: string) => {
@@ -96,41 +122,36 @@ function AppContent() {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-        {/* Input Sidebar */}
+    <div className="h-screen flex flex-col bg-background">
+      {/* Header */}
+      <Navbar
+        sessionId={sessionId}
+        onClearSession={clearSession}
+        isStreaming={isStreaming}
+        loading={isLoading}
+      />
+      
+      {/* Main content area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left sidebar - Input */}
         <InputSidebar
-          open={inputSidebarOpen}
-          onToggle={() => setInputSidebarOpen(!inputSidebarOpen)}
+          open={true}
+          onToggle={() => {}}
           onTextSubmit={handleTextSubmit}
           isProcessing={isLoading || isStreaming}
         />
         
-        {/* Main Content */}
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            minWidth: 0, // Important for flex children
-            position: 'relative',
-          }}
-        >
-          <ChatInterface
-            state={chatState}
-            actions={chatActions}
-            inputRef={inputRef}
-          />
-        </Box>
-
-        {/* Right Sidebar */}
+        {/* Main chat interface */}
+        <ChatInterface
+          state={chatState}
+          actions={chatActions}
+          inputRef={inputRef}
+        />
+        
+        {/* Right sidebar - Conversations */}
         <Sidebar
-          open={sidebarOpen}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
-          darkMode={darkMode}
-          onThemeToggle={toggleDarkMode}
+          open={true}
+          onToggle={() => {}} 
           sessionId={sessionId}
           onClearSession={clearSession}
           isStreaming={isStreaming}
@@ -139,32 +160,23 @@ function AppContent() {
           onLoadConversation={handleLoadConversation}
           onDeleteConversation={handleDeleteConversation}
         />
-      </Box>
+      </div>
 
-      {/* Error Snackbar */}
-      <Snackbar
-        open={!!errorSnackbar}
-        autoHideDuration={6000}
+      {/* Error Notification */}
+      <ErrorNotification
+        error={errorSnackbar}
         onClose={() => setErrorSnackbar(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setErrorSnackbar(null)}
-          severity="error"
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
-          {errorSnackbar}
-        </Alert>
-      </Snackbar>
-    </ThemeProvider>
+      />
+    </div>
   );
 }
 
 function App() {
+  const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const showLanding = path === '/landing';
   return (
     <AuthProvider>
-      <AppContent />
+      {showLanding ? <LandingPage /> : <AppContent />}
     </AuthProvider>
   );
 }

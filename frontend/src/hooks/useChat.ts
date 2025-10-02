@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 export interface ChatMessage {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'tool';
   timestamp: Date;
   isStreaming?: boolean;
 }
@@ -46,6 +46,20 @@ export function useChat() {
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
+
+  // Clear conversations and messages when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setConversations([]);
+      setMessages([]);
+      setConversationId(null);
+      setError(null);
+      // Cancel any ongoing requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    }
+  }, [isAuthenticated]);
 
   // Convert API message to ChatMessage
   const convertMessage = (msg: Message): ChatMessage => ({
@@ -87,8 +101,11 @@ export function useChat() {
     startNewConversation();
   }, [startNewConversation]);
 
-  const sendMessage = useCallback(async (content: string, source: 'text' | 'pdf' = 'text', filename?: string) => {
-    if (!content.trim() || isLoading || isStreaming || !isAuthenticated) return;
+  const sendMessage = useCallback(async (content: string, source: 'text' | 'pdf' = 'text', filename?: string, tools?: string[]) => {
+    if (!content.trim() || isLoading || isStreaming) return;
+
+    // Allow sending messages even when not authenticated
+    // If not authenticated, messages won't be saved to conversations
 
     // Cancel any previous request
     if (abortControllerRef.current) {
@@ -126,6 +143,7 @@ export function useChat() {
         {
           message: content,
           conversation_id: conversationId || undefined,
+          ...(tools && tools.length > 0 && { tools })
         },
         // On chunk received
         (chunk: string) => {
@@ -139,16 +157,22 @@ export function useChat() {
         },
         // On complete
         (response) => {
-          setMessages(prev => 
-            prev.map(msg => 
+          setMessages(prev => {
+            const updated = prev.map(msg => 
               msg.id === assistantMessage.id 
-                ? { ...msg, content: response.response, isStreaming: false }
+                ? { 
+                    ...msg, 
+                    // Only update content if response has content, otherwise keep accumulated content
+                    content: response.response && response.response.trim() ? response.response : msg.content,
+                    isStreaming: false 
+                  }
                 : msg
-            )
-          );
+            );
+            return updated;
+          });
           
-          // Update conversation ID if this was a new conversation
-          if (!conversationId && response.conversation_id) {
+          // Update conversation ID if this was a new conversation and user is authenticated
+          if (!conversationId && response.conversation_id && isAuthenticated) {
             setConversationId(response.conversation_id);
             loadConversations(); // Refresh conversation list
           }
@@ -161,6 +185,7 @@ export function useChat() {
           apiService.sendMessage({
             message: content,
             conversation_id: conversationId || undefined,
+            ...(tools && tools.length > 0 && { tools })
           })
           .then((data) => {
             setMessages(prev => 
@@ -171,7 +196,7 @@ export function useChat() {
               )
             );
             
-            if (!conversationId && data.conversation_id) {
+            if (!conversationId && data.conversation_id && isAuthenticated) {
               setConversationId(data.conversation_id);
               loadConversations();
             }
@@ -252,7 +277,7 @@ export function useChat() {
     isLoading,
     isStreaming,
     error,
-    sessionId: conversationId || '',
+    sessionId: conversationId || null,
     conversationId,
     conversations,
     sendMessage,

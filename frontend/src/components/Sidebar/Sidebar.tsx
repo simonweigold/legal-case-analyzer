@@ -1,76 +1,34 @@
 // components/Sidebar/Sidebar.tsx
-import React, { useState } from 'react';
-import {
-  Box,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  IconButton,
-  Typography,
-  Divider,
-  Tooltip,
-  Chip,
-  Avatar,
-  Button,
-  TextField,
-  InputAdornment,
-  Badge,
-  Menu,
-  MenuItem
-} from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Add,
-  Search,
-  Brightness4,
-  Brightness7,
-  Login,
-  Logout,
-  AccountCircle,
-  MoreVert,
-  Delete,
-  Edit
-} from '@mui/icons-material';
-import { User, ConversationHistory } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { X, Search, MessageCircle, User, Plus, Trash2, MoreVertical } from "lucide-react";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { ScrollArea } from "../ui/scroll-area";
 import { useAuth } from '../../contexts/AuthContext';
-import { AuthModal } from '../Auth';
+import { AuthModal } from '../Auth/AuthModal';
 
 export interface SidebarProps {
   open: boolean;
   onToggle: () => void;
-  darkMode: boolean;
-  onThemeToggle: () => void;
-  sessionId: string;
+  sessionId: string | null;
   onClearSession: () => void;
   isStreaming: boolean;
   loading: boolean;
-  conversations: ConversationHistory[];
+  conversations: any[];
   onLoadConversation: (conversationId: string) => void;
   onDeleteConversation: (conversationId: string) => void;
 }
 
-const DRAWER_WIDTH = 320;
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 1) return 'Today';
-  if (diffDays === 2) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  return date.toLocaleDateString();
-};
+interface Conversation {
+  id: string;
+  title: string;
+  lastMessage: string;
+  timestamp: string;
+}
 
 export function Sidebar({
   open,
   onToggle,
-  darkMode,
-  onThemeToggle,
   sessionId,
   onClearSession,
   isStreaming,
@@ -80,383 +38,233 @@ export function Sidebar({
   onDeleteConversation
 }: SidebarProps) {
   const { user, isAuthenticated, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
-  // Filter conversations based on search
-  const filteredConversations = conversations.filter(conv => {
-    const matchesSearch = conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         conv.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
+  const filteredConversations = conversations
+    .filter(
+      (conv) =>
+        conv.title
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        conv.lastMessage
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()),
+    )
+    .sort((a, b) => {
+      // Sort by updatedAt in descending order (most recent first)
+      const dateA = new Date(a.updatedAt || a.timestamp || 0).getTime();
+      const dateB = new Date(b.updatedAt || b.timestamp || 0).getTime();
+      return dateB - dateA;
+    });
 
-  const handleNewChat = () => {
-    onClearSession();
-    onToggle(); // Close sidebar on mobile after action
+  const handleDeleteConversation = (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the conversation click
+    onDeleteConversation(conversationId);
+    setOpenDropdownId(null);
   };
 
-  const handleLoginClick = () => {
-    setAuthMode('login');
-    setAuthModalOpen(true);
+  const toggleDropdown = (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the conversation click
+    setOpenDropdownId(openDropdownId === conversationId ? null : conversationId);
   };
 
-  const handleSignUpClick = () => {
-    setAuthMode('register');
-    setAuthModalOpen(true);
-  };
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenDropdownId(null);
+    };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setMenuAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setMenuAnchorEl(null);
-  };
+    if (openDropdownId) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openDropdownId]);
 
   const handleLogout = async () => {
-    handleMenuClose();
+    // Clear the current session first
+    onClearSession();
+    // Then logout the user - this should trigger conversation clearing in parent component
     await logout();
   };
 
-  const renderUserSection = () => {
-    if (!isAuthenticated || !user) {
-      return (
-        <Box sx={{ p: 2, textAlign: 'center' }}>
-          <AccountCircle sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Sign in to access your conversation history
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-            <Button
-              variant="contained"
-              startIcon={<Login />}
-              onClick={handleLoginClick}
-              size="small"
-              fullWidth
-            >
-              Sign In
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={handleSignUpClick}
-              size="small"
-              fullWidth
-            >
-              Sign Up
-            </Button>
-          </Box>
-        </Box>
-      );
+  // Clear conversations when user logs out (becomes unauthenticated)
+  useEffect(() => {
+    if (!isAuthenticated && conversations.length > 0) {
+      // If user is not authenticated but still has conversations, clear the session
+      // This helps ensure UI state is consistent
+      onClearSession();
     }
+  }, [isAuthenticated, conversations.length, onClearSession]);
 
+  if (!isOpen) {
     return (
-      <Box sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Avatar
-            src={user.avatar}
-            alt={user.name || user.email}
-            sx={{ width: 40, height: 40, mr: 2 }}
-          >
-            {(user.name || user.email).split(' ').map(n => n[0]).join('').toUpperCase()}
-          </Avatar>
-          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" noWrap>
-              {user.name || 'User'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap>
-              {user.email}
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={handleMenuOpen}>
-            <MoreVert fontSize="small" />
-          </IconButton>
-        </Box>
-        
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={handleNewChat}
-          disabled={isStreaming}
-          fullWidth
-          sx={{ mb: 2 }}
-        >
-          New Analysis
-        </Button>
-      </Box>
+      <Button
+        variant="outline"
+        size="sm"
+        className="fixed top-4 right-4 z-10"
+        onClick={() => setIsOpen(true)}
+      >
+        <MessageCircle className="w-4 h-4" />
+      </Button>
     );
-  };
-
-  const renderConversationHistory = () => {
-    if (!isAuthenticated) {
-      return (
-        <Box sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            Your conversation history will appear here after signing in
-          </Typography>
-        </Box>
-      );
-    }
-
-    return (
-      <Box sx={{ flexGrow: 1 }}>
-        {/* Search and Filter */}
-        <Box sx={{ p: 2, pb: 1 }}>
-          <TextField
-            placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            size="small"
-            fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ mb: 1 }}
-          />
-
-        </Box>
-
-        {/* Conversations List */}
-        <List sx={{ px: 1, flexGrow: 1, maxHeight: 'calc(100vh - 320px)', overflow: 'auto' }}>
-          {filteredConversations.map((conversation) => {
-            return (
-              <ListItem key={conversation.id} disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton
-                  onClick={() => onLoadConversation(conversation.id)}
-                  sx={{
-                    borderRadius: 1,
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    py: 1.5,
-                    '&:hover': {
-                      backgroundColor: 'action.hover',
-                    }
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', mb: 0.5 }}>
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        mr: 1,
-                        flexShrink: 0
-                      }}
-                    />
-                    <Typography
-                      variant="subtitle2"
-                      sx={{
-                        flexGrow: 1,
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {conversation.title}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatDate(conversation.updated_at)}
-                    </Typography>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteConversation(conversation.id);
-                      }}
-                      sx={{ ml: 1 }}
-                    >
-                      <Delete fontSize="small" />
-                    </IconButton>
-                  </Box>
-                  
-                  {conversation.lastMessage && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        fontSize: '0.75rem',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        width: '100%',
-                        mb: 0.5
-                      }}
-                    >
-                      {conversation.lastMessage}
-                    </Typography>
-                  )}
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                    {conversation.category && (
-                      <Chip
-                        label={conversation.category}
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                          fontSize: '0.6rem',
-                          height: 20,
-                          mr: 1
-                        }}
-                      />
-                    )}
-                    {conversation.messageCount && (
-                      <Badge
-                        badgeContent={conversation.messageCount}
-                        color="primary"
-                        sx={{
-                          '& .MuiBadge-badge': {
-                            fontSize: '0.6rem',
-                            height: 16,
-                            minWidth: 16
-                          }
-                        }}
-                      >
-                        <Typography variant="caption" color="text.secondary">
-                          messages
-                        </Typography>
-                      </Badge>
-                    )}
-                  </Box>
-                </ListItemButton>
-              </ListItem>
-            );
-          })}
-          
-          {filteredConversations.length === 0 && searchQuery && (
-            <Box sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                No conversations found matching "{searchQuery}"
-              </Typography>
-            </Box>
-          )}
-          
-          {filteredConversations.length === 0 && !searchQuery && isAuthenticated && (
-            <Box sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                No conversations yet. Start a new analysis!
-              </Typography>
-            </Box>
-          )}
-        </List>
-      </Box>
-    );
-  };
-
-  const drawerContent = (
-    <Box sx={{ width: DRAWER_WIDTH, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box>
-            <Typography variant="h6" component="h1" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-              Legal Case Analyzer
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-              AI-powered legal analysis
-            </Typography>
-          </Box>
-          <IconButton onClick={onThemeToggle} size="small">
-            {darkMode ? <Brightness7 fontSize="small" /> : <Brightness4 fontSize="small" />}
-          </IconButton>
-        </Box>
-      </Box>
-
-      {/* User Section */}
-      {renderUserSection()}
-      
-      <Divider />
-
-      {/* Conversation History */}
-      {renderConversationHistory()}
-
-      {/* Footer */}
-      {isAuthenticated && (
-        <>
-          <Divider />
-          <Box sx={{ p: 2 }}>
-            <Typography variant="caption" color="text.secondary" display="block">
-              Session: {sessionId.slice(0, 8)}...
-            </Typography>
-            {(loading || isStreaming) && (
-              <Chip 
-                label={isStreaming ? 'Streaming...' : 'Processing...'}
-                size="small"
-                color="primary"
-                sx={{ mt: 1, fontSize: '0.7rem', height: 20 }}
-              />
-            )}
-          </Box>
-        </>
-      )}
-    </Box>
-  );
+  }
 
   return (
-    <>
-      {/* Menu Button - only show when sidebar is closed */}
-      {!open && (
-        <IconButton
-          onClick={onToggle}
-          sx={{
-            position: 'fixed',
-            top: 16,
-            right: 16,
-            zIndex: 1201,
-            backgroundColor: 'background.paper',
-            boxShadow: 2,
-            '&:hover': {
-              backgroundColor: 'action.hover',
-            }
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
+    <div className="w-80 border-l border-border bg-background flex flex-col">
+      <div className="p-4 border-b border-border diagonal-lines">
+        <div className="flex items-center justify-between mb-4">
+          <h3>Conversations</h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <div className="relative">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search Conversations"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="relative">
+            <Button
+              onClick={onClearSession}
+              variant="outline"
+              size="sm"
+              className="w-full flex items-center gap-2 justify-center mt-3 bg-white hover:bg-blue-50 hover:border-blue-200"
+              disabled={isStreaming || loading}
+            >
+              <Plus className="w-4 h-4" />
+              New Chat
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-3">
+          {filteredConversations.length > 0 ? (
+            filteredConversations.map((conversation) => (
+              <div
+                key={conversation.id}
+                className="relative p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                onClick={() => onLoadConversation(conversation.id)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="mb-1 truncate">
+                      {conversation.title || 'Legal Analysis Session'}
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                      {conversation.lastMessage || 'No messages yet'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {conversation.updatedAt ? new Date(conversation.updatedAt).toLocaleDateString() : 'Just now'}
+                    </p>
+                  </div>
+                  
+                  {/* Dropdown menu button */}
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => toggleDropdown(conversation.id, e)}
+                      className="p-1 h-6 w-6 text-muted-foreground hover:text-foreground"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                    
+                    {/* Dropdown menu */}
+                    {openDropdownId === conversation.id && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-border rounded-md shadow-lg z-10 min-w-[120px]">
+                        <button
+                          onClick={(e) => handleDeleteConversation(conversation.id, e)}
+                          className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No conversations found
+            </p>
+          )}
+        </div>
+      </ScrollArea>
+
+      {isAuthenticated && user ? (
+        <div className="border-t border-border p-4 bg-muted/30 diagonal-lines">
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-white border">
+            <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center">
+              <User className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm truncate">{user.email}</p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <X className="w-4 h-4 hover:text-red-500" />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="border-t border-border p-4 bg-muted/30 diagonal-lines">
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground mb-3">Sign in to save your conversations</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid bg-white hover:bg-blue-50 hover:border-blue-200">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthModalOpen(true);
+                  }}
+                  className="text-xs"
+                >
+                  Sign In
+                </Button>
+              </div>
+              <div className="grid bg-white hover:bg-blue-50 hover:border-blue-200">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setAuthMode('register');
+                    setAuthModalOpen(true);
+                  }}
+                  className="text-xs"
+                >
+                  Sign Up
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Drawer */}
-      <Drawer
-        variant="temporary"
-        anchor="right"
-        open={open}
-        onClose={onToggle}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile
-        }}
-        sx={{
-          '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
-            boxSizing: 'border-box',
-          },
-        }}
-      >
-        {drawerContent}
-      </Drawer>
-
-      {/* User Menu */}
-      <Menu
-        anchorEl={menuAnchorEl}
-        open={Boolean(menuAnchorEl)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleLogout}>
-          <Logout sx={{ mr: 1 }} fontSize="small" />
-          Sign Out
-        </MenuItem>
-      </Menu>
-
-      {/* Auth Modal */}
       <AuthModal
         open={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
-        initialMode={authMode}
+        mode={authMode}
+        onModeChange={setAuthMode}
       />
-    </>
+    </div>
   );
 }

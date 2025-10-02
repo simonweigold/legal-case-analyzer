@@ -107,7 +107,7 @@ class ConversationService:
         return result.scalars().all()
 
     async def messages_to_langchain_format(self, messages: List[Message]) -> List[BaseMessage]:
-        """Convert database messages to LangChain message format."""
+        """Convert database messages to LangChain message format, filtering out problematic tool messages."""
         langchain_messages = []
         
         for msg in messages:
@@ -115,14 +115,15 @@ class ConversationService:
                 langchain_messages.append(HumanMessage(content=msg.content))
             elif msg.role == "assistant":
                 langchain_messages.append(AIMessage(content=msg.content))
-            elif msg.role == "tool":
-                langchain_messages.append(
-                    ToolMessage(
-                        content=msg.content,
-                        name=msg.tool_name or "",
-                        tool_call_id=msg.tool_call_id or ""
-                    )
-                )
+            # Skip tool messages for now to avoid OpenAI API format issues
+            # elif msg.role == "tool":
+            #     langchain_messages.append(
+            #         ToolMessage(
+            #             content=msg.content,
+            #             name=msg.tool_name or "",
+            #             tool_call_id=msg.tool_call_id or ""
+            #         )
+            #     )
         
         return langchain_messages
 

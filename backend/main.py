@@ -8,11 +8,15 @@ import uvicorn
 # Load environment variables first
 load_dotenv(find_dotenv())
 
+# Setup logging
+from logging_config import setup_logging
+logger = setup_logging()
+
 # Import configuration
 from config import settings
 
 # Import for database initialization
-from database import create_db_and_tables
+from database.database import create_db_and_tables
 
 
 @asynccontextmanager
@@ -42,22 +46,58 @@ app.add_middleware(
 async def root():
     return {"message": settings.API_TITLE, "version": settings.API_VERSION}
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring."""
+    try:
+        # Test database connection
+        from database.database import async_session_maker
+        from sqlalchemy import text
+        
+        async with async_session_maker() as session:
+            await session.execute(text("SELECT 1"))
+        
+        return {
+            "status": "healthy",
+            "service": settings.API_TITLE,
+            "version": settings.API_VERSION,
+            "database": "connected"
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "service": settings.API_TITLE,
+            "version": settings.API_VERSION,
+            "database": "disconnected",
+            "error": str(e)
+        }
+
 # Import and setup after app creation to avoid circular imports
 def setup_routes_and_dependencies():
     from langchain_openai import ChatOpenAI
-    from services.tools import get_tools, get_tools_by_name
+    from tools.tools import get_tools, get_tools_by_name
+    from tools.streaming_tools import get_streaming_tools, get_streaming_tools_by_name
     from utils.workflow import create_workflow
     from routes.auth import router as auth_router
     from routes.conversations import router as conversations_router
     from routes.chat import router as chat_router, set_model_and_tools
+    from routes.tools import router as tools_router
     
     # Initialize the language model
     model = ChatOpenAI(model=settings.MODEL_NAME, streaming=settings.STREAMING)
     
-    # Setup tools
-    tools = get_tools()
-    model = model.bind_tools(tools)
-    tools_by_name = get_tools_by_name()
+    # Setup tools - combine regular and streaming tools
+    regular_tools = get_tools()
+    streaming_tools = get_streaming_tools()
+    all_tools = regular_tools + streaming_tools
+    
+    model = model.bind_tools(all_tools)
+    
+    # Combine tool dictionaries
+    regular_tools_by_name = get_tools_by_name()
+    streaming_tools_by_name = get_streaming_tools_by_name()
+    tools_by_name = {**regular_tools_by_name, **streaming_tools_by_name}
     
     # Set model and tools for chat routes
     set_model_and_tools(model, tools_by_name)
@@ -72,6 +112,7 @@ def setup_routes_and_dependencies():
     app.include_router(auth_router)
     app.include_router(conversations_router)
     app.include_router(chat_router)
+    app.include_router(tools_router)
 
 # Setup routes and dependencies
 setup_routes_and_dependencies()
