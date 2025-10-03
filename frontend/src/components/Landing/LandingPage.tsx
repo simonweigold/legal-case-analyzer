@@ -9,29 +9,23 @@ export const LandingPage: React.FC = () => {
       <Navbar sessionId={null} onClearSession={() => {}} isStreaming={false} loading={false} />
       <div className="flex-1 flex items-center justify-center text-muted-foreground select-none">
         {/*Grid with two columns and grey borders for every grid field. The first column is 1/3 wide. The second 2/3*/}
-        <div className="grid grid-cols-[1fr_3fr] border border-gray-200 w-full h-full">
+        <div className="grid grid-cols-[1fr_3fr_1fr] border-b border-border w-full h-full">
             <div className="">
-                <div className="grid grid-rows-[1fr_2fr] divide-y divide-gray-200 h-full">
-                  <div className="p-4 text-2xl h-full flex items-center justify-center leading-snug">
-                    Welcome to CAUSA AI,<br />an agentic AI web app<br />for analyzing court decisions<br />with ease
+                <div className="grid grid-rows-[1fr_2fr] border-r border-border h-full">
+                  <div className="p-12 text-2xl border-b border-border h-full flex items-center justify-center leading-snug">
+                    Welcome to CAUSA AI, an agentic AI web app for analyzing court decisions with ease
                   </div>
                     <div className="p-2 bg-muted/30 diagonal-lines">Column 1 Row 2 Shaded</div>
                 </div>
             </div>
             <div className="">
-                <div className="grid grid-rows-[1fr_1fr] divide-y divide-gray-200 h-full">
-                    <div className="border border-gray-200">
-                      <div className="grid grid-cols-[1fr_2fr] divide-x divide-gray-200 h-full">
-                        <div className="p-2 bg-muted/30 diagonal-lines">Column 2 Row 1 Column 1 Shaded</div>
-                        <div className="p-2">Column 2 Row 1 Column 2</div>
-                      </div>
-                    </div>
-                    <div className="border border-gray-200">
-                      <div className="grid grid-cols-[2fr_1fr] divide-x divide-gray-200 h-full">
-                        <div className="p-2">Column 2 Row 2 Column 1</div>
-                        <div className="p-2 bg-muted/30 diagonal-lines">Column 2 Row 2 Column 2 Shaded</div>
-                      </div>
-                    </div>
+                Placeholder
+            </div>
+            <div className="grid grid-rows-[2fr_1fr] border-l border-border h-full">
+                <div className="p-12 text-2xl h-full flex items-center justify-center border-b border-border leading-snug">
+                    Start by uploading your case or learn more about this project by clicking here
+                </div>
+                <div className="bg-muted/30  diagonal-lines">
                 </div>
             </div>
         </div>
