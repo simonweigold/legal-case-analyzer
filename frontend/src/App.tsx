@@ -149,20 +149,22 @@ function AppContent() {
       
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left sidebar - Input */}
+        {/* Left sidebar - always displayed; inactive until first analysis */}
         <InputSidebar
           open={true}
           onToggle={() => {}}
           onTextSubmit={handleTextSubmit}
           isProcessing={isLoading || isStreaming}
+          active={messages.length === 0}
         />
         
         {/* Main chat interface */}
         <ChatInterface
           state={chatState}
-          actions={chatActions}
-          inputRef={inputRef}
-        />
+            actions={chatActions}
+            inputRef={inputRef}
+            onInitialSubmit={(text, source, filename) => handleTextSubmit(text, source, filename)}
+          />
         
         {/* Right sidebar - Conversations */}
         <Sidebar

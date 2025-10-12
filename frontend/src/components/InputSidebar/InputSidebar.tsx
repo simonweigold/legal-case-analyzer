@@ -10,9 +10,10 @@ export interface InputSidebarProps {
   onToggle: () => void;
   onTextSubmit: (text: string, source: 'text' | 'pdf', filename?: string, tools?: string[]) => void;
   isProcessing?: boolean;
+  active?: boolean; // whether initial analysis has been provided
 }
 
-export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = false }: InputSidebarProps) {
+export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = false, active = true }: InputSidebarProps) {
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [textInput, setTextInput] = useState("");
@@ -66,114 +67,111 @@ export function InputSidebar({ open, onToggle, onTextSubmit, isProcessing = fals
 
   return (
     <div className="w-80 border-r border-border bg-muted/30 diagonal-lines p-6 flex flex-col">
-      <div className="mb-8">
-        <h2 className="mb-6">Enter a legal case to analyze</h2>
-        
-        <div className="flex gap-2 h-48">
-          {/* PDF Upload Section */}
-          <div
-            className={`
-              relative border-2 border-dashed rounded-lg bg-white text-center transition-all duration-300 ease-in-out cursor-pointer
-              ${dragActive 
-                ? 'border-primary bg-primary/5' 
-                : 'border-muted-foreground/30 hover:border-muted-foreground/50'
-              }
-              ${hoveredSection === 'upload' ? 'flex-[1.5]' : 'flex-1'}
-              ${hoveredSection === 'text' ? 'flex-[0.5]' : ''}
-            `}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onMouseEnter={() => setHoveredSection('upload')}
-            onMouseLeave={() => setHoveredSection(null)}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf"
-              onChange={handleFileInput}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-3">
-              {uploadedFile ? (
-                <div className="flex flex-col items-center gap-2">
-                  <FileText className="w-8 h-8 text-primary" />
-                  <p className="text-xs text-center line-clamp-2">{uploadedFile}</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setUploadedFile(null);
-                    }}
-                    className="text-xs px-2 py-1 h-auto"
-                  >
-                    Remove
-                  </Button>
+      {active ? (
+        <>
+          <div className="mb-8">
+            <h2 className="mb-6">Enter a legal case to analyze</h2>
+            <div className="flex gap-2 h-48">
+              {/* PDF Upload Section */}
+              <div
+                className={`
+                  relative border-2 border-dashed rounded-lg bg-white text-center transition-all duration-300 ease-in-out cursor-pointer
+                  ${dragActive 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-muted-foreground/30 hover:border-muted-foreground/50'
+                  }
+                  ${hoveredSection === 'upload' ? 'flex-[1.5]' : 'flex-1'}
+                  ${hoveredSection === 'text' ? 'flex-[0.5]' : ''}
+                `}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onMouseEnter={() => setHoveredSection('upload')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileInput}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-3">
+                  {uploadedFile ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <FileText className="w-8 h-8 text-primary" />
+                      <p className="text-xs text-center line-clamp-2">{uploadedFile}</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUploadedFile(null);
+                        }}
+                        className="text-xs px-2 py-1 h-auto"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Upload className="w-8 h-8 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground text-center">Drag PDF here</p>
+                      <p className="text-xs text-muted-foreground text-center">or click</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="w-8 h-8 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground text-center">
-                    Drag PDF here
-                  </p>
-                  <p className="text-xs text-muted-foreground text-center">
-                    or click
-                  </p>
+              </div>
+              {/* Text Input Section */}
+              <div
+                className={`
+                  relative border-2 border-dashed rounded-lg bg-white transition-all duration-300 ease-in-out
+                  border-muted-foreground/30 hover:border-muted-foreground/50
+                  ${hoveredSection === 'text' ? 'flex-[1.5]' : 'flex-1'}
+                  ${hoveredSection === 'upload' ? 'flex-[0.5]' : ''}
+                `}
+                onMouseEnter={() => setHoveredSection('text')}
+                onMouseLeave={() => setHoveredSection(null)}
+              >
+                <div className="absolute inset-0 flex flex-col p-3">
+                  <div className="flex flex-col items-center gap-2 mb-3">
+                    <Type className="w-8 h-8 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground text-center">Paste case text</p>
+                  </div>
+                  <Textarea
+                    placeholder="Paste your legal case text here..."
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    className="flex-1 resize-none border-0 bg-transparent focus:ring-0 focus:ring-offset-0 text-xs p-2"
+                  />
                 </div>
-              )}
+              </div>
             </div>
           </div>
-
-          {/* Text Input Section */}
-          <div
-            className={`
-              relative border-2 border-dashed rounded-lg bg-white transition-all duration-300 ease-in-out
-              border-muted-foreground/30 hover:border-muted-foreground/50
-              ${hoveredSection === 'text' ? 'flex-[1.5]' : 'flex-1'}
-              ${hoveredSection === 'upload' ? 'flex-[0.5]' : ''}
-            `}
-            onMouseEnter={() => setHoveredSection('text')}
-            onMouseLeave={() => setHoveredSection(null)}
-          >
-            <div className="absolute inset-0 flex flex-col p-3">
-              <div className="flex flex-col items-center gap-2 mb-3">
-                <Type className="w-8 h-8 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground text-center">
-                  Paste case text
-                </p>
-              </div>
-              
-              <Textarea
-                placeholder="Paste your legal case text here..."
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                className="flex-1 resize-none border-0 bg-transparent focus:ring-0 focus:ring-offset-0 text-xs p-2"
-              />
-            </div>
+          {/* Tool Selection */}
+          <div className="mb-6">
+            <ToolSelector selectedTools={selectedTools} onToolsChange={setSelectedTools} />
+          </div>
+          {hasContent && (
+            <Button
+              className="mt-auto bg-white border text-black hover:bg-blue-50 hover:border-blue-200"
+              onClick={handleSubmit}
+              disabled={isProcessing}
+            >
+              {isProcessing ? 'Analyzing...' : 'Analyze Case'}
+            </Button>
+          )}
+        </>
+      ) : (
+        <div className="flex flex-col h-full">
+          <h2 className="mb-4">Analysis Inputs</h2>
+          <div className="text-xs text-muted-foreground bg-white border rounded-md p-4">
+            Provide a court decision below to unlock detailed tool inputs.
+            Once the initial analysis completes, you can add more documents or paste additional case text here.
           </div>
         </div>
-      </div>
-      
-      {/* Tool Selection */}
-      <div className="mb-6">
-        <ToolSelector
-          selectedTools={selectedTools}
-          onToolsChange={setSelectedTools}
-        />
-      </div>
-      
-      {hasContent && (
-        <Button 
-          className="mt-auto bg-white border text-black hover:bg-blue-50 hover:border-blue-200" 
-          onClick={handleSubmit}
-          disabled={isProcessing}
-        >
-          {isProcessing ? 'Analyzing...' : 'Analyze Case'}
-        </Button>
       )}
     </div>
   );

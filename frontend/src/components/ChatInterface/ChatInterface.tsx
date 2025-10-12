@@ -1,7 +1,9 @@
 // components/ChatInterface/ChatInterface.tsx
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Textarea } from '../ui/textarea';
 import type { ChatState } from '../../hooks/useChat';
+import { Upload, FileText, Type } from 'lucide-react';
+import { Button } from '../ui/button';
 
 export interface ChatActions {
   setInput: (value: string) => void;
@@ -14,9 +16,48 @@ export interface ChatInterfaceProps {
   state: ChatState & { input: string };
   actions: ChatActions;
   inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
+  onInitialSubmit: (text: string, source: 'text' | 'pdf', filename?: string) => void;
 }
 
-export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) {
+export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: ChatInterfaceProps) {
+  const initialMode = state.messages.length === 0; // gating condition
+  // Local state for initial analysis input
+  const [showChoices, setShowChoices] = useState(false);
+  const [pastedText, setPastedText] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.txt'))) return;
+    setSelectedFile(file);
+  };
+
+  const handleInitialAnalyze = () => {
+    if (selectedFile) {
+      if (selectedFile.type === 'application/pdf') {
+        onInitialSubmit(`Document: ${selectedFile.name}`, 'pdf', selectedFile.name);
+        setSelectedFile(null);
+        setPastedText('');
+      } else if (selectedFile.name.toLowerCase().endsWith('.txt')) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = String(reader.result || '').trim();
+          if (text) onInitialSubmit(text, 'text', selectedFile.name);
+          setSelectedFile(null);
+          setPastedText('');
+        };
+        reader.readAsText(selectedFile);
+      }
+      return;
+    }
+    if (pastedText.trim()) {
+      onInitialSubmit(pastedText.trim(), 'text');
+      setPastedText('');
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col">
       {/* Messages area - scrollable */}
@@ -27,9 +68,7 @@ export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) 
               <div className="space-y-4">
                 <h1 className="h1 text-4xl mb-4">Welcome to CAUSA AI</h1>
                 <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
-                  Start by uploading a legal case or asking a question
-                  about legal matters. I'm here to analyze cases and
-                  help you understand them better.
+                  Start by providing a court decision (PDF, TXT, or paste the text). After the initial analysis you can continue the conversation.
                 </p>
               </div>
             </div>
@@ -79,25 +118,97 @@ export function ChatInterface({ state, actions, inputRef }: ChatInterfaceProps) 
         </div>
       </div>
 
-      {/* Fixed input area at bottom */}
+      {/* Fixed bottom area */}
       <div className="flex-shrink-0 p-8 pt-4 border-t border-border bg-background">
         <div className="max-w-4xl mx-auto">
-          <Textarea
-            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-            placeholder="Enter your analysis or questions here..."
-            value={state.input}
-            onChange={(e) => actions.setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (state.input.trim() && !state.isLoading && !state.isStreaming) {
-                  actions.sendMessage();
+          {initialMode ? (
+            <div className="relative border-2 border-dashed rounded-lg p-6 bg-muted/30 hover:bg-muted/50 transition-colors">
+              {!showChoices && (
+                <button
+                  className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground"
+                  onClick={() => setShowChoices(true)}
+                >
+                  <Upload className="w-8 h-8" />
+                  <span className="text-sm">Click to add a court decision (PDF, TXT, or paste text)</span>
+                </button>
+              )}
+              {showChoices && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* File chooser */}
+                  <div className="flex flex-col gap-3">
+                    <label className="text-sm font-medium flex items-center gap-2"><FileText className="w-4 h-4" /> Upload File</label>
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="group border border-border rounded-lg p-4 text-center cursor-pointer bg-white hover:border-primary hover:bg-primary/5 transition"
+                    >
+                      {selectedFile ? (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium break-all">{selectedFile.name}</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
+                          >Remove</Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
+                          <Upload className="w-6 h-6" />
+                          <span>PDF or TXT</span>
+                          <span className="text-[10px]">Click to choose</span>
+                        </div>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.txt,text/plain,application/pdf"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+                  {/* Paste text */}
+                  <div className="flex flex-col gap-3">
+                    <label className="text-sm font-medium flex items-center gap-2"><Type className="w-4 h-4" /> Paste Text</label>
+                    <Textarea
+                      placeholder="Paste the full text of the decision here..."
+                      value={pastedText}
+                      onChange={(e) => setPastedText(e.target.value)}
+                      className="min-h-[160px] resize-none"
+                    />
+                  </div>
+                  <div className="md:col-span-2 flex justify-end gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setShowChoices(false); setSelectedFile(null); setPastedText(''); }}
+                    >Cancel</Button>
+                    <Button
+                      size="sm"
+                      disabled={!selectedFile && !pastedText.trim()}
+                      onClick={handleInitialAnalyze}
+                    >Analyze Decision</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Textarea
+              ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+              placeholder="Enter follow-up questions or analysis here..."
+              value={state.input}
+              onChange={(e) => actions.setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (state.input.trim() && !state.isLoading && !state.isStreaming) {
+                    actions.sendMessage();
+                  }
                 }
-              }
-            }}
-            className="min-h-[150px] resize-none flowing-blue-bg flowing-blue-border focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 transition-all duration-200"
-            disabled={state.isLoading || state.isStreaming}
-          />
+              }}
+              className="min-h-[150px] resize-none flowing-blue-bg flowing-blue-border focus:border-blue-400 focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 transition-all duration-200"
+              disabled={state.isLoading || state.isStreaming}
+            />
+          )}
         </div>
       </div>
     </div>
