@@ -1,17 +1,27 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "Preserve",
-    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "allowJs": true,
     "strict": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["node", "react", "react-dom"],
+    "allowSyntheticDefaultImports": true,
+    "noEmit": true
   },
-  "exclude": ["dist", "node_modules"]
+  "include": ["src", "vite.config.ts"],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "tailwind.config.js",
+    "postcss.config.js"
+  ]
 }

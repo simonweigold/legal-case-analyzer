@@ -1,34 +1,22 @@
 # dependencies (bun install)
 node_modules
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lock
 
-# output
-out
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Directories
 dist
-*.tgz
-
-# code coverage
-coverage
-*.lcov
-
-# logs
-logs
-_.log
-report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
-
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
-
-# caches
-.eslintcache
 .cache
-*.tsbuildinfo
 
-# IntelliJ based IDEs
+# Editor directories and files
 .idea
-
-# Finder (MacOS) folder config
-.DS_Store
+.vscode
