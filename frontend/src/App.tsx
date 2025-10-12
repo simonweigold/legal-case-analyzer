@@ -1,6 +1,6 @@
 // App.tsx
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { LandingPage } from './components/Landing/LandingPage';
 import { ChatInterface } from './components/ChatInterface';
 import { Sidebar } from './components/Sidebar';
@@ -41,6 +41,7 @@ function ErrorNotification({ error, onClose }: { error: string | null; onClose: 
 }
 
 function AppContent() {
+  const location = useLocation();
   const {
     messages,
     isLoading,
@@ -121,6 +122,20 @@ function AppContent() {
   };
 
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Auto-trigger analysis if landing passed pendingAnalysis in navigation state
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.pendingAnalysis) {
+      const { source, text, filename } = state.pendingAnalysis;
+      // Avoid duplicate send if messages already exist
+      if (messages.length === 0) {
+        sendMessage(text, source, filename);
+      }
+    }
+  // run only on initial mount or when location.state changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   return (
     <div className="h-screen flex flex-col bg-background">
