@@ -13,11 +13,11 @@ body { background: var(--background); color: var(--foreground); font-family: 'No
 
 /* Logo font explicit mapping (Google Fonts Bodoni Moda SC) */
 .causa-logo {
-  font-family: 'Bodoni Moda SC', 'Bodoni Moda', 'Times New Roman', serif;
-  font-weight: 800;
-  letter-spacing: 0.75em;
-  font-variant-ligatures: discretionary-ligatures;
-  text-rendering: optimizeLegibility;
+  font-family: 'Bodoni Moda SC', serif;
+  font-size: 1.6rem;
+  font-weight: 850;
+  color: #130DDD;
+  letter-spacing: 0.8em;
 }
 
 /* Simple pattern still used across layout */
