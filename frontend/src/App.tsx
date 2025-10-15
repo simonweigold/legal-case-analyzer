@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { LandingPage } from './components/Landing/LandingPage';
 import { ChatInterface } from './components/ChatInterface';
 import { Sidebar } from './components/Sidebar';
-import { InputSidebar } from './components/InputSidebar';
+import { ToolSidebar } from './components/ToolSidebar';
 import { Navbar } from './components/Navbar';
 import { useChat } from './hooks/useChat';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -150,7 +150,7 @@ function AppContent() {
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left sidebar - always displayed; inactive until first analysis */}
-        <InputSidebar
+        <ToolSidebar
           open={true}
           onToggle={() => {}}
           onTextSubmit={handleTextSubmit}
