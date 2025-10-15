@@ -70,7 +70,7 @@ export function ToolSidebar({ open, onToggle, onTextSubmit, isProcessing = false
       {active ? (
         <>
           {/* Tool Selection */}
-          <div className="mb-6">
+          <div className="mt-24">
             <ToolSelector selectedTools={selectedTools} onToolsChange={setSelectedTools} />
           </div>
           {hasContent && (
