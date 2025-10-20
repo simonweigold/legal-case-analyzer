@@ -4,12 +4,71 @@
 
 /* Core design tokens kept intentionally small */
 :root {
-  --background: #ffffff;
-  --foreground: #111418;
-  --color-border: rgba(0,0,0,0.12);
-  --muted: #f2f4f7;
+  /* Base colors */
+  --color-background: #ffffff;
+  --color-foreground: #111418;
+  --color-border: rgba(0,0,0,0.25);
+  --color-muted: #f2f4f7;
+  --color-muted-foreground: #6b7280;
+  
+  /* Card colors */
+  --color-card: #ffffff;
+  --color-card-foreground: #111418;
+  
+  /* Popover colors */
+  --color-popover: #ffffff;
+  --color-popover-foreground: #111418;
+  
+  /* Primary colors */
+  --color-primary: #130DDD;
+  --color-primary-foreground: #ffffff;
+  
+  /* Secondary colors */
+  --color-secondary: #f2f4f7;
+  --color-secondary-foreground: #111418;
+  
+  /* Accent colors */
+  --color-accent: #f2f4f7;
+  --color-accent-foreground: #111418;
+  
+  /* Destructive colors */
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  
+  /* Input colors */
+  --color-input: rgba(0,0,0,0.12);
+  --color-input-background: #ffffff;
+  
+  /* Switch colors */
+  --color-switch-background: #e5e7eb;
+  
+  /* Ring color */
+  --color-ring: rgba(19, 13, 221, 0.2);
+  
+  /* Chart colors */
+  --color-chart-1: #130DDD;
+  --color-chart-2: #6366f1;
+  --color-chart-3: #8b5cf6;
+  --color-chart-4: #a855f7;
+  --color-chart-5: #c084fc;
+  
+  /* Sidebar colors */
+  --color-sidebar: #ffffff;
+  --color-sidebar-foreground: #111418;
+  --color-sidebar-primary: #130DDD;
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: #f2f4f7;
+  --color-sidebar-accent-foreground: #111418;
+  --color-sidebar-border: rgba(0,0,0,0.12);
+  --color-sidebar-ring: rgba(19, 13, 221, 0.2);
+  
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
 }
-body { background: var(--background); color: var(--foreground); font-family: 'Noto Serif', serif; }
+body { background: var(--color-background); color: var(--color-foreground); font-family: 'Noto Serif', serif; }
 
 /* Logo font explicit mapping (Google Fonts Bodoni Moda SC) */
 .clerk-logo {
