@@ -30,10 +30,10 @@ export const LandingPage: React.FC = () => {
     setAuthModalOpen(false);
     if (isAuthenticated) {
       if (pendingAnalysisRef.current) {
-        navigate('/causa', { state: { pendingAnalysis: pendingAnalysisRef.current } });
+        navigate('/clerk', { state: { pendingAnalysis: pendingAnalysisRef.current } });
         pendingAnalysisRef.current = null;
       } else {
-        navigate('/causa');
+        navigate('/clerk');
       }
     }
   };
@@ -41,7 +41,7 @@ export const LandingPage: React.FC = () => {
   // If user already authenticated and hits landing, kick them to app
   if (isAuthenticated && !authModalOpen && !uploadedFile && !textInput) {
     // Passive redirect only if no staged input; avoid interfering with in-progress landing actions
-    setTimeout(() => navigate('/causa'), 0);
+    setTimeout(() => navigate('/clerk'), 0);
   }
 
   const handleDrag = (e: React.DragEvent) => {
@@ -100,7 +100,7 @@ export const LandingPage: React.FC = () => {
       return;
     }
     // Navigate directly with state
-    navigate('/causa', { state: { pendingAnalysis: pendingAnalysisRef.current } });
+    navigate('/clerk', { state: { pendingAnalysis: pendingAnalysisRef.current } });
     pendingAnalysisRef.current = null;
   };
 
@@ -113,7 +113,7 @@ export const LandingPage: React.FC = () => {
             <div className="">
                 <div className="grid grid-rows-[1fr_2fr] border-r border-border h-full">
                   <div className="p-12 text-2xl border-b border-border h-full flex items-center justify-center leading-snug">
-                    Welcome to CAUSA AI, an agentic AI web app for analyzing court decisions with ease
+                    Welcome to CLERK, an agentic AI web app for analyzing court decisions with ease
                   </div>
                     <div className="p-2 bg-muted/30 diagonal-lines flex flex-col gap-4 justify-center">
                       <div className="flex gap-2 h-40">
@@ -231,7 +231,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </div>
       <div className="grid place-items-center p-4 text-xs text-muted-foreground">
-        © {new Date().getFullYear()} CAUSA AI
+        © {new Date().getFullYear()} CLERK
       </div>
       <AuthModal
         open={authModalOpen}

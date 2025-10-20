@@ -66,32 +66,19 @@ export function ToolSidebar({ open, onToggle, onTextSubmit, isProcessing = false
   const hasContent = uploadedFile || textInput.trim();
 
   return (
-    <div className="w-80 border-r border-border bg-muted/30 diagonal-lines p-6 flex flex-col">
-      {active ? (
-        <>
-          {/* Tool Selection */}
-          <div className="mt-24">
-            <ToolSelector selectedTools={selectedTools} onToolsChange={setSelectedTools} />
-          </div>
-          {hasContent && (
-            <Button
-              className="mt-auto bg-white border text-black hover:bg-blue-50 hover:border-blue-200"
-              onClick={handleSubmit}
-              disabled={isProcessing}
-            >
-              {isProcessing ? 'Analyzing...' : 'Analyze Case'}
-            </Button>
-          )}
-        </>
-      ) : (
-        <div className="flex flex-col h-full">
-          <h2 className="mb-4">Analysis Inputs</h2>
-          <div className="text-xs text-muted-foreground bg-white border rounded-md p-4">
-            Provide a court decision below to unlock detailed tool inputs.
-            Once the initial analysis completes, you can add more documents or paste additional case text here.
-          </div>
-        </div>
-      )}
+    <div className="w-80 grid grid-rows-[1fr_6fr_1fr] border-r border-border h-full">
+      {/* Top decorative / spacer */}
+      <div className="diagonal-lines" />
+      {/* Controlled height area for tools - exactly 1/3 of grid */}
+      <div className="p-4 border-t border-b border-border bg-white overflow-hidden">
+        <ToolSelector
+          selectedTools={selectedTools}
+          onToolsChange={setSelectedTools}
+          className="h-full"
+        />
+      </div>
+      {/* Bottom decorative / spacer */}
+      <div className="diagonal-lines" />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-# 🎨 CAUSA AI – Frontend Style Documentation
+# 🎨 CLERK AI – Frontend Style Documentation
 
 ## 1. Color Palette
 | Hex Code  | Usage |
@@ -16,7 +16,7 @@
 
 - **Logo Font:**  
   - `Bodoni Moda SC` (Bold, All Caps)  
-  - Usage: Header logo "CAUSA AI"  
+  - Usage: Header logo "CLERK"  
 
 - **App Font (UI + body):**  
   - `Inter`  

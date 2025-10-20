@@ -46,7 +46,7 @@ export function AuthModal({ open, onClose, mode, onModeChange }: AuthModalProps)
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-causa-lg bg-white text-dark shadow-xl transition-all border border-gray/20">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-clerk-lg bg-white text-dark shadow-xl transition-all border border-gray/20">
                 <div className="relative p-8">
                   <button
                     onClick={onClose}
@@ -60,7 +60,7 @@ export function AuthModal({ open, onClose, mode, onModeChange }: AuthModalProps)
                       as="h3"
                       className="text-h2 text-center text-dark"
                     >
-                      {mode === 'login' ? 'Welcome back' : 'Join CAUSA AI'}
+                      {mode === 'login' ? 'Welcome back' : 'Join CLERK.AI'}
                     </Dialog.Title>
                     <p className="text-body text-gray-dark text-center mt-3">
                       {mode === 'login'

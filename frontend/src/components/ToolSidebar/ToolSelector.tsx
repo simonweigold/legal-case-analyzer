@@ -74,7 +74,7 @@ export function ToolSelector({ selectedTools, onToolsChange, className = "" }: T
 
   if (loading) {
     return (
-      <div className={`p-4 border rounded-lg bg-white ${className}`}>
+      <div className={`${className}`}>
         <div className="flex items-center gap-2 mb-3">
           <Wrench className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium">Analysis Tools</span>
@@ -87,7 +87,7 @@ export function ToolSelector({ selectedTools, onToolsChange, className = "" }: T
 
   if (error) {
     return (
-      <div className={`p-4 border rounded-lg bg-white ${className}`}>
+      <div className={`${className}`}>
         <div className="flex items-center gap-2 mb-3">
           <Wrench className="w-4 h-4 text-red-500" />
           <span className="text-sm font-medium text-red-500">Tools Error</span>
@@ -103,112 +103,95 @@ export function ToolSelector({ selectedTools, onToolsChange, className = "" }: T
   const totalCount = tools.length;
 
   return (
-    <div className={`p-4 border rounded-lg bg-white ${className}`}>
-      <div className="flex items-center justify-between mb-3">
+    <div className={`flex flex-col h-full ${className}`}>
+      <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Analysis Tools</span>
-          <span className="text-xs text-muted-foreground">
-            ({selectedCount}/{totalCount} selected)
-          </span>
+          <span className="text-xs text-muted-foreground">({selectedCount}/{totalCount} selected)</span>
         </div>
       </div>
-        <div className="flex gap-2 mb-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={selectAll}
-              className="text-xs px-2 py-1 h-auto flex-1"
-            >
-              <Check className="w-3 h-3 mr-1" />
-              All
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={deselectAll}
-              className="text-xs px-2 py-1 h-auto flex-1"
-            >
-              <X className="w-3 h-3 mr-1" />
-              None
-            </Button>
-          </div>
-
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {regularTools.length > 0 && (
-              <div>
-                <h4 className="text-xs font-medium text-muted-foreground mb-2">
-                  Standard Tools
-                </h4>
-                <div className="space-y-1">
-                  {regularTools.map((tool) => (
-                    <label
-                      key={tool.name}
-                      className="flex items-start gap-2 cursor-pointer p-2 hover:bg-muted/30 rounded text-xs group"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedTools.includes(tool.name)}
-                        onChange={() => toggleTool(tool.name)}
-                        className="mt-0.5 rounded"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate group-hover:text-primary">
-                          {tool.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </div>
-                        <div className="text-muted-foreground mt-1 line-clamp-2">
-                          {tool.description}
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {streamingTools.length > 0 && (
-              <div>
-                <h4 className="text-xs font-medium text-muted-foreground mb-2">
-                  Streaming Tools
-                </h4>
-                <div className="space-y-1">
-                  {streamingTools.map((tool) => (
-                    <label
-                      key={tool.name}
-                      className="flex items-start gap-2 cursor-pointer p-2 hover:bg-muted/30 rounded text-xs group"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedTools.includes(tool.name)}
-                        onChange={() => toggleTool(tool.name)}
-                        className="mt-0.5 rounded"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate group-hover:text-primary">
-                          {tool.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          <span className="ml-1 text-blue-500 text-xs">⚡</span>
-                        </div>
-                        <div className="text-muted-foreground mt-1 line-clamp-2">
-                          {tool.description}
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {selectedCount === 0 && (
-            <div className="text-xs text-amber-600 mt-3 p-2 bg-amber-50 rounded">
-              ⚠️ No tools selected. The AI will only use general knowledge.
+      <div className="flex gap-2 mb-3 flex-shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={selectAll}
+          className="text-xs px-2 py-1 h-auto flex-1"
+        >
+          <Check className="w-3 h-3 mr-1" /> All
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={deselectAll}
+          className="text-xs px-2 py-1 h-auto flex-1"
+        >
+          <X className="w-3 h-3 mr-1" /> None
+        </Button>
+      </div>
+      {/* Scrollable list area - takes remaining space */}
+      <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
+        {regularTools.length > 0 && (
+          <div>
+            <h4 className="text-xs font-medium text-muted-foreground mb-2">Standard Tools</h4>
+            <div className="space-y-1">
+              {regularTools.map((tool) => (
+                <label
+                  key={tool.name}
+                  className="flex items-start gap-2 cursor-pointer p-2 hover:bg-muted/30 rounded text-xs group"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTools.includes(tool.name)}
+                    onChange={() => toggleTool(tool.name)}
+                    className="mt-0.5 rounded"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate group-hover:text-primary">
+                      {tool.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </div>
+                    <div className="text-muted-foreground mt-1 line-clamp-2">{tool.description}</div>
+                  </div>
+                </label>
+              ))}
             </div>
-          )}
-
-        <div className="mt-4 text-xs text-muted-foreground">
-          {selectedCount === totalCount
-            ? "All tools selected"
-            : `${selectedTools.slice(0, 3).map(name => name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')}${selectedCount > 3 ? ` and ${selectedCount - 3} more` : ''}`}
-        </div>
+          </div>
+        )}
+        {streamingTools.length > 0 && (
+          <div>
+            <h4 className="text-xs font-medium text-muted-foreground mb-2">Streaming Tools</h4>
+            <div className="space-y-1">
+              {streamingTools.map((tool) => (
+                <label
+                  key={tool.name}
+                  className="flex items-start gap-2 cursor-pointer p-2 hover:bg-muted/30 rounded text-xs group"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTools.includes(tool.name)}
+                    onChange={() => toggleTool(tool.name)}
+                    className="mt-0.5 rounded"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate group-hover:text-primary">
+                      {tool.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      <span className="ml-1 text-blue-500 text-xs">⚡</span>
+                    </div>
+                    <div className="text-muted-foreground mt-1 line-clamp-2">{tool.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {selectedCount === 0 && (
+        <div className="text-xs text-amber-600 mt-3 p-2 rounded flex-shrink-0">No tools selected. The AI will only use general knowledge.</div>
+      )}
+      <div className="mt-4 text-xs text-muted-foreground flex-shrink-0">
+        {selectedCount === totalCount
+          ? 'All tools selected'
+          : `${selectedTools.slice(0, 3).map(name => name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')}${selectedCount > 3 ? ` and ${selectedCount - 3} more` : ''}`}
+      </div>
     </div>
   );
 }

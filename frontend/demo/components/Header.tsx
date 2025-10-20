@@ -10,7 +10,7 @@ export function Header() {
             <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
               <div className="w-2 h-2 bg-white rounded-full"></div>
             </div>
-            <h1 className="tracking-wider">CAUSA AI</h1>
+            <h1 className="tracking-wider">CLERK</h1>
           </div>
         </div>
       </div>

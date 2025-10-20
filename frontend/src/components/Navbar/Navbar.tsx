@@ -21,7 +21,7 @@ export function Navbar({
           <div className="w-0 h-8 bg-primary rounded flex items-center justify-center">
             <div className="w-2 h-2 bg-white rounded-full"></div>
           </div>
-          <h1 className="causa-logo">CAUSA AI</h1>
+          <h1 className="clerk-logo">CLERK</h1>
         </div>
       </div>
     </header>

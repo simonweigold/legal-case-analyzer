@@ -23,7 +23,7 @@ function ErrorNotification({ error, onClose }: { error: string | null; onClose: 
 
   return (
     <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
-      <div className="bg-red-500 text-white px-4 py-3 rounded-causa shadow-lg border border-red-500/20">
+      <div className="bg-red-500 text-white px-4 py-3 rounded-clerk shadow-lg border border-red-500/20">
         <div className="flex items-center justify-between">
           <span className="text-small font-medium">{error}</span>
           <button
@@ -195,7 +195,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/causa" element={<AppContent />} />
+          <Route path="/clerk" element={<AppContent />} />
           {/* Legacy support: if someone navigates to /landing redirect to root */}
           <Route path="/landing" element={<Navigate to="/" replace />} />
           {/* Fallback */}

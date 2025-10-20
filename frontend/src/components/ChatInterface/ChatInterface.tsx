@@ -1,5 +1,7 @@
 // components/ChatInterface/ChatInterface.tsx
 import React, { useState, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Textarea } from '../ui/textarea';
 import type { ChatState } from '../../hooks/useChat';
 import { Upload, FileText, Type } from 'lucide-react';
@@ -64,10 +66,10 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
       <div className="flex-1 overflow-y-auto p-8 pb-4">
         <div className="max-w-4xl mx-auto space-y-6">
           {state.messages.length === 0 && !state.isLoading ? (
-            <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
+            <div className="mt-16 flex flex-col items-center justify-center h-full min-h-[400px] text-center">
               <div className="space-y-4">
-                <h1 className="h1 text-4xl mb-4">Welcome to CAUSA AI</h1>
-                <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
+                <h1 className="h1 text-4xl mb-12">Welcome to CLERK</h1>
+                <p className="text-lg text-black/50 leading-relaxed max-w-md">
                   Start by providing a court decision (PDF, TXT, or paste the text). After the initial analysis you can continue the conversation.
                 </p>
               </div>
@@ -83,7 +85,20 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
                   )}
                   {message.role === 'assistant' && (
                     <div className="space-y-4">
-                      <p className="leading-relaxed">{message.content}</p>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        className="prose prose-sm max-w-none prose-headings:font-serif prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-code:text-pink-600"
+                        components={{
+                          a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+                            <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline" />
+                          ),
+                          table: (props: React.HTMLAttributes<HTMLTableElement>) => (
+                            <div className="overflow-x-auto"><table {...props} /></div>
+                          )
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
                     </div>
                   )}
                   {message.role === 'tool' && (
@@ -139,7 +154,7 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
                     <label className="text-sm font-medium flex items-center gap-2"><FileText className="w-4 h-4" /> Upload File</label>
                     <div
                       onClick={() => fileInputRef.current?.click()}
-                      className="group border border-border rounded-lg p-4 text-center cursor-pointer bg-white hover:border-primary hover:bg-primary/5 transition"
+                      className="group border border-border rounded-lg p-4 text-center cursor-pointer bg-white hover:border-primary hover:bg-primary/5 transition min-h-[160px]"
                     >
                       {selectedFile ? (
                         <div className="space-y-2">

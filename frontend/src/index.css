@@ -12,7 +12,7 @@
 body { background: var(--background); color: var(--foreground); font-family: 'Noto Serif', serif; }
 
 /* Logo font explicit mapping (Google Fonts Bodoni Moda SC) */
-.causa-logo {
+.clerk-logo {
   font-family: 'Bodoni Moda SC', serif;
   font-size: 1.6rem;
   font-weight: 850;
