@@ -115,6 +115,8 @@ export const LandingPage: React.FC = () => {
                   <div className="p-12 text-2xl border-b border-border h-full flex items-center justify-center leading-snug">
                     Welcome to CLERK, an agentic AI web app for analyzing court decisions with ease
                   </div>
+                  <div className="diagonal-lines">
+                  </div>
                 </div>
             </div>
             <div className="flex items-center justify-center p-12 bg-blue-animation">
