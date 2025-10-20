@@ -89,7 +89,7 @@ export const LandingPage: React.FC = () => {
     } else {
       pendingAnalysisRef.current = {
         source: 'text',
-        text: `${textInput.trim()}\n\nPlease analyze this legal text.`
+        text: `${textInput.trim()}`
       };
     }
 

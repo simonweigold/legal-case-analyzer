@@ -1,5 +1,5 @@
 // components/ChatInterface/ChatInterface.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Textarea } from '../ui/textarea';
@@ -27,7 +27,16 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
   const [showChoices, setShowChoices] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [customInstructions, setCustomInstructions] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change or streaming
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [state.messages, state.isStreaming, state.isLoading]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -37,26 +46,35 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
   };
 
   const handleInitialAnalyze = () => {
+    const instructions = customInstructions.trim() || 'Please analyze this legal document.\n\nLegal Document:';
+
     if (selectedFile) {
       if (selectedFile.type === 'application/pdf') {
         onInitialSubmit(`Document: ${selectedFile.name}`, 'pdf', selectedFile.name);
         setSelectedFile(null);
         setPastedText('');
+        setCustomInstructions('');
       } else if (selectedFile.name.toLowerCase().endsWith('.txt')) {
         const reader = new FileReader();
         reader.onload = () => {
           const text = String(reader.result || '').trim();
-          if (text) onInitialSubmit(text, 'text', selectedFile.name);
+          if (text) {
+            const formattedText = `${instructions}\n\n${text}`;
+            onInitialSubmit(formattedText, 'text', selectedFile.name);
+          }
           setSelectedFile(null);
           setPastedText('');
+          setCustomInstructions('');
         };
         reader.readAsText(selectedFile);
       }
       return;
     }
     if (pastedText.trim()) {
-      onInitialSubmit(pastedText.trim(), 'text');
+      const formattedText = `${instructions}\n\n${pastedText.trim()}`;
+      onInitialSubmit(formattedText, 'text');
       setPastedText('');
+      setCustomInstructions('');
     }
   };
 
@@ -80,7 +98,7 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
                 <div key={index}>
                   {message.role === 'user' && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                      <p className="leading-relaxed">{message.content}</p>
+                      <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
                     </div>
                   )}
                   {message.role === 'assistant' && (
@@ -128,6 +146,9 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
                   </div>
                 </div>
               )}
+              
+              {/* Invisible element to scroll to */}
+              <div ref={messagesEndRef} />
             </>
           )}
         </div>
@@ -149,6 +170,17 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
               )}
               {showChoices && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Custom Instructions - spans full width and appears first */}
+                  <div className="md:col-span-2 flex flex-col gap-3">
+                    <label className="text-sm font-medium">Custom Analysis Instructions</label>
+                    <Textarea
+                      placeholder="Enter specific instructions for how you want the legal document analyzed"
+                      value={customInstructions}
+                      onChange={(e) => setCustomInstructions(e.target.value)}
+                      className="min-h-[80px] resize-none border border-border bg-white hover:border-primary hover:bg-primary/5 transition text-sm"
+                    />
+                  </div>
+                  
                   {/* File chooser */}
                   <div className="flex flex-col gap-3">
                     <label className="text-sm font-medium flex items-center gap-2"><FileText className="w-4 h-4" /> Upload File</label>
@@ -188,14 +220,15 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
                       placeholder="Paste the full text of the decision here..."
                       value={pastedText}
                       onChange={(e) => setPastedText(e.target.value)}
-                      className="min-h-[160px] resize-none"
+                      className="min-h-[160px] resize-none border border-border bg-white hover:border-primary hover:bg-primary/5 transition"
                     />
                   </div>
+                  
                   <div className="md:col-span-2 flex justify-end gap-3">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => { setShowChoices(false); setSelectedFile(null); setPastedText(''); }}
+                      onClick={() => { setShowChoices(false); setSelectedFile(null); setPastedText(''); setCustomInstructions(''); }}
                     >Cancel</Button>
                     <Button
                       size="sm"

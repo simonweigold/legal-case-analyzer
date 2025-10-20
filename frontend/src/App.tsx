@@ -80,7 +80,7 @@ function AppContent() {
     if (source === 'pdf' && filename) {
       formattedInput = `[Document: ${filename}]\n\n${text}\n\nPlease analyze this legal document.`;
     } else {
-      formattedInput = `${text}\n\nPlease analyze this legal text.`;
+      formattedInput = `${text}`;
     }
 
     sendMessage(formattedInput, source, filename, tools);

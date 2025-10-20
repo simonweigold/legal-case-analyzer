@@ -78,7 +78,7 @@ export function LoginForm({ onSwitchToRegister, onSuccess }: LoginFormProps) {
               value={formData.username}
               onChange={handleChange('username')}
               className={cn(
-                "clerk-input w-full",
+                "clerk-input w-full border border-border/20 p-1 rounded-lg",
                 formErrors.username && "border-red-500"
               )}
               placeholder="Enter your email"
@@ -100,7 +100,7 @@ export function LoginForm({ onSwitchToRegister, onSuccess }: LoginFormProps) {
                 value={formData.password}
                 onChange={handleChange('password')}
                 className={cn(
-                  "clerk-input w-full pr-12",
+                  "clerk-input w-full pr-12 border border-border/20 p-1 rounded-lg",
                   formErrors.password && "border-red-500"
                 )}
                 placeholder="Enter your password"
