@@ -107,14 +107,18 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-background">
       <Navbar sessionId={null} onClearSession={() => {}} isStreaming={false} loading={false} />
-      <div className="flex-1 flex items-center justify-center text-muted-foreground select-none">
+      <div className="flex-1 flex items-center justify-center select-none">
         {/*Grid with two columns and grey borders for every grid field. The first column is 1/3 wide. The second 2/3*/}
         <div className="grid grid-cols-[1fr_3fr] border-b border-border w-full h-full">
             <div className="">
                 <div className="grid grid-rows-[1fr_2fr] border-r border-border h-full">
-                  <div className="p-12 text-2xl border-b border-border h-full flex items-center justify-center leading-snug">
-                    Welcome to CLERK, an agentic AI web app for analyzing court decisions with ease
-                  </div>
+                    <div className="p-12 text-2xl border-b border-border h-full flex items-center justify-center leading-snug text-foreground">
+                      <div className="max-w-md">
+                        <p>
+                          Welcome to CLERK, an <span className="font-bold text-primary">Open Source AI Agent</span> for Analyzing Court Decisions with Ease
+                        </p>
+                      </div>
+                    </div>
                   <div className="diagonal-lines">
                   </div>
                 </div>
