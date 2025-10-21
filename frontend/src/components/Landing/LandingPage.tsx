@@ -30,10 +30,10 @@ export const LandingPage: React.FC = () => {
     setAuthModalOpen(false);
     if (isAuthenticated) {
       if (pendingAnalysisRef.current) {
-        navigate('/causa', { state: { pendingAnalysis: pendingAnalysisRef.current } });
+        navigate('/clerk', { state: { pendingAnalysis: pendingAnalysisRef.current } });
         pendingAnalysisRef.current = null;
       } else {
-        navigate('/causa');
+        navigate('/clerk');
       }
     }
   };
@@ -41,7 +41,7 @@ export const LandingPage: React.FC = () => {
   // If user already authenticated and hits landing, kick them to app
   if (isAuthenticated && !authModalOpen && !uploadedFile && !textInput) {
     // Passive redirect only if no staged input; avoid interfering with in-progress landing actions
-    setTimeout(() => navigate('/causa'), 0);
+    setTimeout(() => navigate('/clerk'), 0);
   }
 
   const handleDrag = (e: React.DragEvent) => {
@@ -89,7 +89,7 @@ export const LandingPage: React.FC = () => {
     } else {
       pendingAnalysisRef.current = {
         source: 'text',
-        text: `${textInput.trim()}\n\nPlease analyze this legal text.`
+        text: `${textInput.trim()}`
       };
     }
 
@@ -100,89 +100,27 @@ export const LandingPage: React.FC = () => {
       return;
     }
     // Navigate directly with state
-    navigate('/causa', { state: { pendingAnalysis: pendingAnalysisRef.current } });
+    navigate('/clerk', { state: { pendingAnalysis: pendingAnalysisRef.current } });
     pendingAnalysisRef.current = null;
   };
 
   return (
     <div className="h-screen flex flex-col bg-background">
       <Navbar sessionId={null} onClearSession={() => {}} isStreaming={false} loading={false} />
-      <div className="flex-1 flex items-center justify-center text-muted-foreground select-none">
+      <div className="flex-1 flex items-center justify-center select-none">
         {/*Grid with two columns and grey borders for every grid field. The first column is 1/3 wide. The second 2/3*/}
         <div className="grid grid-cols-[1fr_3fr] border-b border-border w-full h-full">
             <div className="">
                 <div className="grid grid-rows-[1fr_2fr] border-r border-border h-full">
-                  <div className="p-12 text-2xl border-b border-border h-full flex items-center justify-center leading-snug">
-                    Welcome to CAUSA AI, an agentic AI web app for analyzing court decisions with ease
-                  </div>
-                    <div className="p-2 bg-muted/30 diagonal-lines flex flex-col gap-4 justify-center">
-                      <div className="flex gap-2 h-40">
-                        {/* PDF Upload */}
-                        <div
-                          className={`relative border-2 border-dashed rounded-lg bg-white text-center transition-all duration-300 ease-in-out cursor-pointer flex-1 ${dragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/30 hover:border-muted-foreground/50'}`}
-                          onDragEnter={handleDrag}
-                          onDragLeave={handleDrag}
-                          onDragOver={handleDrag}
-                          onDrop={handleDrop}
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept=".pdf"
-                            onChange={handleFileInput}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          />
-                          <div className="absolute inset-0 flex flex-col items-center justify-center p-3">
-                            {uploadedFile ? (
-                              <div className="flex flex-col items-center gap-2">
-                                <FileText className="w-6 h-6 text-primary" />
-                                <p className="text-[10px] text-center line-clamp-2">{uploadedFile.name}</p>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={(e) => { e.stopPropagation(); setUploadedFile(null); }}
-                                  className="text-[10px] px-2 py-1 h-auto"
-                                >
-                                  Remove
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex flex-col items-center gap-1">
-                                <Upload className="w-6 h-6 text-muted-foreground" />
-                                <p className="text-[10px] text-muted-foreground">PDF</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        {/* Text Input */}
-                        <div
-                          className={`relative border-2 border-dashed rounded-lg bg-white transition-all duration-300 ease-in-out flex-1 border-muted-foreground/30 hover:border-muted-foreground/50`}
-                        >
-                          <div className="absolute inset-0 flex flex-col p-2">
-                            <div className="flex items-center gap-1 mb-1 text-muted-foreground justify-center">
-                              <Type className="w-4 h-4" />
-                              <span className="text-[10px]">Text</span>
-                            </div>
-                            <Textarea
-                              placeholder="Paste case text..."
-                              value={textInput}
-                              onChange={(e) => setTextInput(e.target.value)}
-                              className="flex-1 resize-none border-0 bg-transparent focus:ring-0 focus:ring-offset-0 text-[10px] p-1"
-                            />
-                          </div>
-                        </div>
+                    <div className="p-12 text-2xl border-b border-border h-full flex items-center justify-center leading-snug text-foreground">
+                      <div className="max-w-md">
+                        <p>
+                          Welcome to CLERK, an <span className="font-bold text-primary">Open Source AI Agent</span> for Analyzing Court Decisions with Ease
+                        </p>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={triggerAnalysis}
-                        disabled={!hasContent}
-                        className="self-start bg-white hover:bg-blue-50 hover:border-blue-200"
-                      >
-                        {isAuthenticated ? 'Analyze' : 'Sign Up & Analyze'}
-                      </Button>
                     </div>
+                  <div className="diagonal-lines">
+                  </div>
                 </div>
             </div>
             <div className="flex items-center justify-center p-12 bg-blue-animation">
@@ -231,7 +169,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </div>
       <div className="grid place-items-center p-4 text-xs text-muted-foreground">
-        © {new Date().getFullYear()} CAUSA AI
+        © {new Date().getFullYear()} CLERK
       </div>
       <AuthModal
         open={authModalOpen}

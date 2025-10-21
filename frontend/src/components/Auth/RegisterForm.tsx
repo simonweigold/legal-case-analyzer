@@ -77,7 +77,7 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
     <div>
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-causa p-4">
+          <div className="bg-red-50 border border-red-200 rounded-clerk p-4">
             <p className="text-small text-red-600">{error}</p>
           </div>
         )}
@@ -92,7 +92,7 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
               type="text"
               value={formData.name}
               onChange={handleChange('name')}
-              className="causa-input w-full"
+              className="clerk-input w-full"
               placeholder="Enter your full name"
               disabled={isLoading}
             />
@@ -108,7 +108,7 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
               value={formData.email}
               onChange={handleChange('email')}
               className={cn(
-                "causa-input w-full",
+                "clerk-input w-full",
                 formErrors.email && "border-red-500"
               )}
               placeholder="Enter your email"
@@ -130,7 +130,7 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
                 value={formData.password}
                 onChange={handleChange('password')}
                 className={cn(
-                  "causa-input w-full pr-12",
+                  "clerk-input w-full pr-12",
                   formErrors.password && "border-red-500"
                 )}
                 placeholder="Create a password"
@@ -163,7 +163,7 @@ export function RegisterForm({ onSwitchToLogin, onSuccess }: RegisterFormProps) 
                 value={formData.confirmPassword}
                 onChange={handleChange('confirmPassword')}
                 className={cn(
-                  "causa-input w-full pr-12",
+                  "clerk-input w-full pr-12",
                   formErrors.confirmPassword && "border-red-500"
                 )}
                 placeholder="Confirm your password"

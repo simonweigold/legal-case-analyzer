@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 # Initialize the language model (will be set by main.py)
 model = None
 tools_by_name = None
+# Temporary flag to disable all LLM tool usage (simple answers only)
+DISABLE_LLM_TOOLS = True
 
 
 def set_model_and_tools(llm_model, tools_dict):
@@ -33,6 +35,10 @@ def create_model_with_selected_tools(selected_tools=None):
     """Create a model instance with only the selected tools."""
     from langchain_openai import ChatOpenAI
     from config import settings
+    
+    # If tools are globally disabled, always return a fresh model without tools
+    if DISABLE_LLM_TOOLS:
+        return ChatOpenAI(model=settings.MODEL_NAME, streaming=settings.STREAMING)
     
     if selected_tools is None:
         # Return the default model with all tools
@@ -233,95 +239,9 @@ async def stream_chat_with_conversation(
                         accumulated_content += chunk.content
                         yield f"data: {json.dumps({'type': 'chunk', 'content': chunk.content, 'conversation_id': conversation_id})}\n\n"
                     
-                    # Handle tool calls if present
-                    if hasattr(chunk, 'tool_calls') and chunk.tool_calls:
-                        for tool_call in chunk.tool_calls:
-                            tool_name = tool_call.get("name", "")
-                            tool_args = tool_call.get("args", {})
-                            
-                            # Skip empty tool names
-                            if not tool_name or not tool_name.strip():
-                                logger.warning("Skipping tool call with empty name")
-                                continue
-                                
-                            logger.info(f"Tool call: {tool_name} with args: {tool_args}")
-                            
-                            tool_message = f"🔧 Using tool: {tool_name}"
-                            yield f"data: {json.dumps({'content': tool_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool'})}\n\n"
-                            
-                            # Execute the tool with error handling
-                            if tool_name in available_tools:
-                                try:
-                                    # Special handling for streaming analyze legal case
-                                    if tool_name == "streaming_analyze_legal_case":
-                                        yield f"data: {json.dumps({'content': '🔧 Starting comprehensive PIL analysis with step-by-step progress...', 'conversation_id': conversation_id, 'done': False, 'type': 'tool_start'})}\n\n"
-                                        
-                                        # Execute the streaming analysis tool
-                                        tool_result = available_tools[tool_name].invoke(tool_args)
-                                        
-                                        # Stream the result line by line to show progress
-                                        result_lines = str(tool_result).split('\n')
-                                        current_section = ""
-                                        
-                                        for line in result_lines:
-                                            if line.startswith('#') or line.startswith('**') or line.startswith('✅') or line.startswith('❌') or line.startswith('🔄'):
-                                                if current_section:
-                                                    # Send the accumulated section
-                                                    yield f"data: {json.dumps({'content': current_section, 'conversation_id': conversation_id, 'done': False, 'type': 'analysis_progress'})}\n\n"
-                                                    current_section = ""
-                                                
-                                                # Start new section
-                                                if line.strip():
-                                                    current_section = line + '\n'
-                                            else:
-                                                if line.strip():
-                                                    current_section += line + '\n'
-                                                elif current_section:
-                                                    # Empty line - send current section
-                                                    yield f"data: {json.dumps({'content': current_section, 'conversation_id': conversation_id, 'done': False, 'type': 'analysis_progress'})}\n\n"
-                                                    current_section = ""
-                                        
-                                        # Send any remaining content
-                                        if current_section:
-                                            yield f"data: {json.dumps({'content': current_section, 'conversation_id': conversation_id, 'done': False, 'type': 'analysis_progress'})}\n\n"
-                                        
-                                        yield f"data: {json.dumps({'content': '🎉 Comprehensive legal analysis completed!', 'conversation_id': conversation_id, 'done': False, 'type': 'analysis_complete'})}\n\n"
-                                    
-                                    else:
-                                        # Regular tool execution
-                                        tool_result = available_tools[tool_name].invoke(tool_args)
-                                        logger.info(f"Tool {tool_name} executed successfully")
-                                        
-                                        result_message = f"📋 Tool result: {str(tool_result)[:300]}{'...' if len(str(tool_result)) > 300 else ''}"
-                                        yield f"data: {json.dumps({'content': result_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_result'})}\n\n"
-                                    
-                                    # Save tool messages to database
-                                    await conversation_service.add_message_to_conversation(
-                                        conversation_id=conversation_id,
-                                        role="tool",
-                                        content=json.dumps(tool_result),
-                                        tool_name=tool_name,
-                                        tool_call_id=tool_call["id"]
-                                    )
-                                    
-                                except Exception as tool_error:
-                                    logger.error(f"Tool {tool_name} failed: {str(tool_error)}")
-                                    error_message = f"❌ Tool {tool_name} failed: {str(tool_error)}"
-                                    
-                                    # Save error message to database
-                                    await conversation_service.add_message_to_conversation(
-                                        conversation_id=conversation_id,
-                                        role="tool",
-                                        content=f"Error: {str(tool_error)}",
-                                        tool_name=tool_name,
-                                        tool_call_id=tool_call["id"]
-                                    )
-                                    
-                                    yield f"data: {json.dumps({'content': error_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_error'})}\n\n"
-                            else:
-                                logger.warning(f"Tool {tool_name} not found in available tools")
-                                error_message = f"❌ Tool {tool_name} is not available"
-                                yield f"data: {json.dumps({'content': error_message, 'conversation_id': conversation_id, 'done': False, 'type': 'tool_error'})}\n\n"
+                    # Tool calls disabled (temporarily) -> ignore any tool_calls for simple answers
+                    # if hasattr(chunk, 'tool_calls') and chunk.tool_calls:
+                    #     ... (tool execution disabled)
 
                 # Save the final AI response to database
                 logger.info(f"LLM streaming completed. Total content length: {len(accumulated_content)}")

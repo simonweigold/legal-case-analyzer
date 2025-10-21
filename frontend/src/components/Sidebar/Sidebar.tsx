@@ -146,7 +146,7 @@ export function Sidebar({
               disabled={isStreaming || loading}
             >
               <Plus className="w-4 h-4" />
-              New Chat
+              New Analysis
             </Button>
           </div>
         </div>

@@ -62,7 +62,7 @@ export function LoginForm({ onSwitchToRegister, onSuccess }: LoginFormProps) {
     <div>
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-causa p-4">
+          <div className="bg-red-50 border border-red-200 rounded-clerk p-4">
             <p className="text-small text-red-600">{error}</p>
           </div>
         )}
@@ -78,7 +78,7 @@ export function LoginForm({ onSwitchToRegister, onSuccess }: LoginFormProps) {
               value={formData.username}
               onChange={handleChange('username')}
               className={cn(
-                "causa-input w-full",
+                "clerk-input w-full border border-border/20 p-1 rounded-lg",
                 formErrors.username && "border-red-500"
               )}
               placeholder="Enter your email"
@@ -100,7 +100,7 @@ export function LoginForm({ onSwitchToRegister, onSuccess }: LoginFormProps) {
                 value={formData.password}
                 onChange={handleChange('password')}
                 className={cn(
-                  "causa-input w-full pr-12",
+                  "clerk-input w-full pr-12 border border-border/20 p-1 rounded-lg",
                   formErrors.password && "border-red-500"
                 )}
                 placeholder="Enter your password"

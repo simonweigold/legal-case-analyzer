@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { LandingPage } from './components/Landing/LandingPage';
 import { ChatInterface } from './components/ChatInterface';
 import { Sidebar } from './components/Sidebar';
-import { InputSidebar } from './components/InputSidebar';
+import { ToolSidebar } from './components/ToolSidebar';
 import { Navbar } from './components/Navbar';
 import { useChat } from './hooks/useChat';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -23,7 +23,7 @@ function ErrorNotification({ error, onClose }: { error: string | null; onClose: 
 
   return (
     <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
-      <div className="bg-red-500 text-white px-4 py-3 rounded-causa shadow-lg border border-red-500/20">
+      <div className="bg-red-500 text-white px-4 py-3 rounded-clerk shadow-lg border border-red-500/20">
         <div className="flex items-center justify-between">
           <span className="text-small font-medium">{error}</span>
           <button
@@ -80,7 +80,7 @@ function AppContent() {
     if (source === 'pdf' && filename) {
       formattedInput = `[Document: ${filename}]\n\n${text}\n\nPlease analyze this legal document.`;
     } else {
-      formattedInput = `${text}\n\nPlease analyze this legal text.`;
+      formattedInput = `${text}`;
     }
 
     sendMessage(formattedInput, source, filename, tools);
@@ -149,20 +149,22 @@ function AppContent() {
       
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left sidebar - Input */}
-        <InputSidebar
+        {/* Left sidebar - always displayed; inactive until first analysis */}
+        <ToolSidebar
           open={true}
           onToggle={() => {}}
           onTextSubmit={handleTextSubmit}
           isProcessing={isLoading || isStreaming}
+          active={messages.length === 0}
         />
         
         {/* Main chat interface */}
         <ChatInterface
           state={chatState}
-          actions={chatActions}
-          inputRef={inputRef}
-        />
+            actions={chatActions}
+            inputRef={inputRef}
+            onInitialSubmit={(text, source, filename) => handleTextSubmit(text, source, filename)}
+          />
         
         {/* Right sidebar - Conversations */}
         <Sidebar
@@ -193,7 +195,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/causa" element={<AppContent />} />
+          <Route path="/clerk" element={<AppContent />} />
           {/* Legacy support: if someone navigates to /landing redirect to root */}
           <Route path="/landing" element={<Navigate to="/" replace />} />
           {/* Fallback */}

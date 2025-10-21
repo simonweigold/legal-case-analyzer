@@ -22,8 +22,8 @@ export default {
           foreground: "var(--color-popover-foreground)",
         },
         primary: {
-          DEFAULT: "var(--color-primary)",
-          foreground: "var(--color-primary-foreground)",
+          DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
+          foreground: "rgb(var(--color-primary-foreground) / <alpha-value>)",
         },
         secondary: {
           DEFAULT: "var(--color-secondary)",
@@ -85,4 +85,7 @@ export default {
     },
   },
   plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }
