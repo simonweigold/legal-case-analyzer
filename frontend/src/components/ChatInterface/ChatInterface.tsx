@@ -158,7 +158,7 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
       <div className="flex-shrink-0 p-8 pt-4 border-t border-border bg-background">
         <div className="max-w-4xl mx-auto">
           {initialMode ? (
-            <div className="relative border-2 border-dashed rounded-lg p-6 bg-muted/30 hover:bg-muted/50 transition-colors">
+            <div className="relative border-2 border-dashed rounded-lg p-6 bg-muted/30 hover:bg-muted/50 transition-colors flowing-blue-bg">
               {!showChoices && (
                 <button
                   className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground"

@@ -105,6 +105,48 @@ body { background: var(--color-background); color: var(--color-foreground); font
 
 @media (prefers-reduced-motion: reduce) { .bg-blue-animation::after { animation: none; } }
 
+/* === Flowing blue background for input areas === */
+@keyframes flowing-blue-move {
+  0%   { transform: translate(-20%, -15%) scale(1.8); opacity: 0.18; }
+  25%  { transform: translate(45%, -10%) scale(2.1); opacity: 0.22; }
+  50%  { transform: translate(60%, 50%) scale(1.9); opacity: 0.25; }
+  75%  { transform: translate(-10%, 60%) scale(2.05); opacity: 0.20; }
+  100% { transform: translate(-20%, -15%) scale(1.8); opacity: 0.18; }
+}
+
+.flowing-blue-bg { 
+  position: relative; 
+  overflow: hidden; 
+}
+
+.flowing-blue-bg::before {
+  content: "";
+  position: absolute; 
+  top: 0; 
+  left: 0; 
+  width: 80%; 
+  height: 120%;
+  background: radial-gradient(circle at 50% 50%, rgba(19, 13, 221, 0.9), rgba(59, 130, 246, 0.2), transparent 70%);
+  filter: blur(10px) saturate(150%);
+  animation: flowing-blue-move 12s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.flowing-blue-border {
+  border: 1px solid rgba(19, 13, 221, 0.2);
+  box-shadow: 0 0 0 1px rgba(19, 13, 221, 0.05);
+}
+
+.flowing-blue-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) { 
+  .flowing-blue-bg::before { animation: none; opacity: 0.06; } 
+}
+
 /* === Loading dots animation === */
 @keyframes pulse-dot {
   0%, 80%, 100% { 
