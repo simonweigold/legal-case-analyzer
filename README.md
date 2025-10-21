@@ -287,3 +287,52 @@ Nice to have:
 ---
 
 Built with ❤️ for the legal community using cutting-edge AI technology.
+
+## 🐳 Deployment with Docker (Backend + Frontend Single Container)
+
+This project can be built into a single container image that serves the FastAPI backend and the built React (Vite) frontend.
+
+### 1. Build Image
+
+```bash
+docker build -t legal-case-analyzer:latest .
+```
+
+### 2. Run Container
+
+```bash
+docker run --rm -p 8000:8000 \
+    -e OPENAI_API_KEY=your_key_here \
+    legal-case-analyzer:latest
+```
+
+### 3. Access Application
+
+- API root info: http://localhost:8000/
+- API docs (Swagger): http://localhost:8000/docs
+- Frontend (SPA): http://localhost:8000/app
+- Static assets: http://localhost:8000/static/
+
+### 4. Persisting the Database (Optional)
+
+By default the SQLite file lives inside the container. To persist data across runs:
+
+```bash
+docker run --rm -p 8000:8000 \
+    -e OPENAI_API_KEY=your_key_here \
+    -v $(pwd)/backend/legal_analyzer.db:/app/backend/legal_analyzer.db \
+    legal-case-analyzer:latest
+```
+
+### 5. Customizing Build
+
+- Modify `OPENAI_API_KEY` or other env vars using `-e VAR=value`.
+- For production you can add a multi-stage optimization or pin dependencies further.
+
+### 6. Notes
+
+- The frontend is built once during the image build (Vite → `frontend/dist`).
+- FastAPI serves the SPA under `/app` to avoid changing the existing root JSON endpoint.
+- Minimal code changes were introduced: a small static mount in `backend/main.py`.
+
+---

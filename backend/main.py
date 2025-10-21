@@ -2,6 +2,8 @@ import os
 from contextlib import asynccontextmanager
 from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -28,7 +30,7 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app
 app = FastAPI(
-    title=settings.API_TITLE, 
+    title=settings.API_TITLE,
     version=settings.API_VERSION,
     lifespan=lifespan
 )
@@ -116,6 +118,20 @@ def setup_routes_and_dependencies():
 
 # Setup routes and dependencies
 setup_routes_and_dependencies()
+
+# --- Static Frontend Mount (minimal addition) ---
+# If a built frontend (Vite) "dist" directory exists at ../frontend/dist, serve it.
+frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+if os.path.isdir(frontend_dist_path):
+    # Mount static files under /static and serve index.html at root for SPA routing (except API routes)
+    app.mount("/static", StaticFiles(directory=frontend_dist_path, html=True), name="static")
+
+    @app.get("/app", include_in_schema=False)
+    async def serve_index():  # explicit route
+        return FileResponse(os.path.join(frontend_dist_path, "index.html"))
+
+    # Fallback for SPA routes that don't start with /api or known prefixes; keeps existing root JSON endpoint.
+    # We avoid overriding existing '/' root path returning API info; users access SPA via /app.
 
 if __name__ == "__main__":
     print(f"Starting {settings.API_TITLE}...")

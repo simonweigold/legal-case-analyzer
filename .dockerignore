@@ -1,0 +1,34 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore node modules and build artifacts except final dist
+frontend/node_modules
+frontend/.vite
+frontend/dist
+!frontend/dist/index.html
+
+# Logs
+*.log
+backend/logs/
+backend/*.log
+
+# Local env files
+.env
+backend/.env
+
+# VCS
+.git
+.gitignore
+
+# IDE/editor
+.vscode
+.DS_Store
+
+# SQLite DB (can be persisted via volume if desired)
+backend/*.db
+backend/**/*.db
+
+# Docker file itself allowed
