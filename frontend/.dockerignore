@@ -1,0 +1,22 @@
+# Ignore dependencies & build cache
+node_modules
+.dist
+/dist
+.bun
+
+# VCS & editor files
+.git
+.gitignore
+.vscode
+.idea
+
+# Logs & misc
+*.log
+*.DS_Store
+
+# Tests (none currently but pattern reserved)
+**/*.test.*
+**/__tests__/
+
+# Local media not needed if unused
+# (demo.mov is needed and kept via build copy)

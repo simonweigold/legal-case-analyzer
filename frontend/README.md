@@ -50,3 +50,28 @@ npm install
 ```
 
 Happy hacking!
+
+## Landing Page Only Docker Image
+A minimal container that serves just the public landing page (route `/`) and static assets without exposing authenticated app routes. Uses a Node 20 Alpine build stage and Nginx runtime.
+
+Build the image:
+```bash
+docker build -f Dockerfile.landing -t clerk-landing:latest .
+```
+
+In repo root you can also run:
+```bash
+docker build -f frontend/Dockerfile.landing -t clerk-landing frontend
+```
+
+Run the container:
+```bash
+docker run --rm -p 8080:80 clerk-landing:latest
+```
+
+Visit:
+```
+http://localhost:8080/
+```
+
+Blocked routes (e.g. `/clerk`, `/api`) return 404.

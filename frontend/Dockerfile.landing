@@ -1,0 +1,45 @@
+## Multi-stage build: build React/Vite landing page with Node, then serve via Nginx
+
+# --- Build Stage ---
+FROM node:20-alpine AS build
+WORKDIR /app
+
+# Install build dependencies (needed for some packages)
+RUN apk add --no-cache libc6-compat
+
+# Copy dependency manifests
+COPY package.json package-lock.json* ./
+COPY tsconfig.json tailwind.config.js postcss.config.js ./
+
+# Copy source and static/public assets
+COPY index.html ./
+COPY src ./src
+COPY public ./public
+
+# Install dependencies and build (vite-only; no separate tsc type-check per Option B)
+RUN npm ci --ignore-scripts --no-audit --no-fund
+RUN npm run build
+
+# Ensure required root-level assets (if not already emitted by Vite)
+RUN cp -f src/favicon-16x16.png dist/ 2>/dev/null || true \
+ && cp -f src/favicon-32x32.png dist/ 2>/dev/null || true \
+ && cp -f src/favicon.ico dist/ 2>/dev/null || true \
+ && cp -f src/apple-touch-icon.png dist/ 2>/dev/null || true \
+ && cp -f src/site.webmanifest dist/ 2>/dev/null || true \
+ && cp -f public/demo.mov dist/ 2>/dev/null || true
+
+# --- Runtime Stage ---
+FROM nginx:1.27-alpine AS runtime
+
+# Nginx config restricting to landing page only
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Static build output
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+# Healthcheck: ensure index.html is served
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 CMD wget -qO- http://localhost/ | grep -qi "<title>Clerk AI" || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
