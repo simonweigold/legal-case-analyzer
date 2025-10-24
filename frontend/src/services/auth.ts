@@ -25,8 +25,10 @@ export interface AuthResponse {
   token_type: string;
 }
 
+import { backendConfig } from '../config';
+
 class AuthService {
-  private baseUrl = 'http://localhost:8000';
+  private baseUrl = backendConfig.baseUrl;
   private tokenKey = 'legal_analyzer_token';
 
   // Get stored token
@@ -67,7 +69,7 @@ class AuthService {
 
   // Register new user
   async register(data: RegisterRequest): Promise<AuthUser> {
-    const response = await fetch(`${this.baseUrl}/auth/register`, {
+  const response = await fetch(`${this.baseUrl}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +92,7 @@ class AuthService {
     formData.append('password', data.password);
     formData.append('grant_type', 'password');
 
-    const response = await fetch(`${this.baseUrl}/auth/jwt/login`, {
+  const response = await fetch(`${this.baseUrl}/auth/jwt/login`, {
       method: 'POST',
       body: formData,
     });
@@ -108,7 +110,7 @@ class AuthService {
   // Logout user
   async logout(): Promise<void> {
     try {
-      await fetch(`${this.baseUrl}/auth/jwt/logout`, {
+  await fetch(`${this.baseUrl}/auth/jwt/logout`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
       });
@@ -121,7 +123,7 @@ class AuthService {
 
   // Get current user info
   async getCurrentUser(): Promise<AuthUser> {
-    const response = await fetch(`${this.baseUrl}/users/me`, {
+  const response = await fetch(`${this.baseUrl}/users/me`, {
       headers: this.getAuthHeaders(),
     });
 
@@ -138,7 +140,7 @@ class AuthService {
 
   // Update user profile
   async updateProfile(data: Partial<AuthUser>): Promise<AuthUser> {
-    const response = await fetch(`${this.baseUrl}/users/me`, {
+  const response = await fetch(`${this.baseUrl}/users/me`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../Navbar';
 import { Button } from '../ui/button';
@@ -20,6 +20,32 @@ export const LandingPage: React.FC = () => {
   const [hoveredSection, setHoveredSection] = useState<'upload' | 'text' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingAnalysisRef = useRef<{source:'pdf'|'text'; text:string; filename?:string} | null>(null);
+  const [isPortrait, setIsPortrait] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(orientation: portrait)').matches
+      : true
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(orientation: portrait)');
+    const handler = (e: MediaQueryListEvent) => setIsPortrait(e.matches);
+    // Use addEventListener if available, else fallback
+    if (mq.addEventListener) {
+      mq.addEventListener('change', handler);
+    } else {
+      // @ts-ignore - Safari <14
+      mq.addListener(handler);
+    }
+    return () => {
+      if (mq.removeEventListener) {
+        mq.removeEventListener('change', handler);
+      } else {
+        // @ts-ignore
+        mq.removeListener(handler);
+      }
+    };
+  }, []);
 
   const handleOpen = (mode: 'login' | 'register') => {
     setAuthMode(mode);
@@ -107,66 +133,59 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-background">
       <Navbar sessionId={null} onClearSession={() => {}} isStreaming={false} loading={false} />
-      <div className="flex-1 flex items-center justify-center select-none">
-        {/*Grid with two columns and grey borders for every grid field. The first column is 1/3 wide. The second 2/3*/}
-        <div className="grid grid-cols-[1fr_3fr] border-b border-border w-full h-full">
+      <div className="flex-1 w-full select-none">
+        {isPortrait ? (
+          <div className="flex flex-col gap-8 px-6 py-12 items-center">
+            <div className="text-xl leading-snug max-w-md text-foreground mb-4 text-center">
+              <p>
+                Welcome to CLERK, an <span className="font-bold text-primary">Open Source AI Agent</span> for Analyzing Court Decisions with Ease
+              </p>
+            </div>
+            <div className="w-full">
+              <video
+                className="w-full h-auto rounded-md shadow-sm"
+                src="/demo.mov"
+                playsInline
+                autoPlay
+                muted
+                loop
+                controls
+                preload="metadata"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-[1fr_3fr] border-b border-border w-full h-full">
             <div className="">
-                <div className="grid grid-rows-[1fr_2fr] border-r border-border h-full">
-                    <div className="p-12 text-2xl border-b border-border h-full flex items-center justify-center leading-snug text-foreground">
-                      <div className="max-w-md">
-                        <p>
-                          Welcome to CLERK, an <span className="font-bold text-primary">Open Source AI Agent</span> for Analyzing Court Decisions with Ease
-                        </p>
-                      </div>
-                    </div>
-                  <div className="diagonal-lines">
+              <div className="grid grid-rows-[1fr_2fr] border-r border-border h-full">
+                <div className="p-12 text-2xl border-b border-border h-full flex items-center justify-center leading-snug text-foreground">
+                  <div className="max-w-md">
+                    <p>
+                      Welcome to CLERK, an <span className="font-bold text-primary">Open Source AI Agent</span> for Analyzing Court Decisions with Ease
+                    </p>
                   </div>
                 </div>
+                <div className="diagonal-lines" />
+              </div>
             </div>
             <div className="flex items-center justify-center p-12 bg-blue-animation">
-                <video
-                  className="max-w-full max-h-full"
-                  src="/demo.mov"
-                  playsInline
-                  autoPlay
-                  muted
-                  loop
-                  controls
-                  preload="metadata"
-                >
-                  Your browser does not support the video tag.
-                </video>
+              <video
+                className="max-w-full max-h-full"
+                src="/demo.mov"
+                playsInline
+                autoPlay
+                muted
+                loop
+                controls
+                preload="metadata"
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
-            {/*
-            <div className="grid grid-rows-[2fr_1fr] border-l border-border h-full">
-                <div className="p-12 text-2xl h-full flex flex-col gap-8 items-center justify-center border-b border-border leading-snug">
-                  <div className="max-w-sm">
-                    Start by uploading your case or create an account to save and revisit your legal analysis sessions
-                  </div>
-                </div>
-                <div className="p-2 bg-muted/30 diagonal-lines flex items-center justify-center text-sm text-muted-foreground">
-                  <div className="flex gap-6">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpen('login')}
-                      className="w-28 bg-white hover:bg-blue-50 hover:border-blue-200"
-                    >
-                      Sign In
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpen('register')}
-                      className="w-28 bg-white hover:bg-blue-50 hover:border-blue-200"
-                    >
-                      Sign Up
-                    </Button>
-                  </div>
-                </div>
-            </div>
-            */}
-        </div>
+          </div>
+        )}
       </div>
       <div className="grid place-items-center p-4 text-xs text-muted-foreground">
         © {new Date().getFullYear()} CLERK

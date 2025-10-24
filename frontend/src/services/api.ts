@@ -1,5 +1,6 @@
 // services/api.ts
 import { authService } from './auth';
+import { backendConfig } from '../config';
 
 export interface Conversation {
   id: string;
@@ -35,7 +36,7 @@ export interface ChatResponse {
 }
 
 class ApiService {
-  private baseUrl = 'http://localhost:8000';
+  private baseUrl = backendConfig.baseUrl;
 
   // Get authorization headers
   private getAuthHeaders(): Record<string, string> {

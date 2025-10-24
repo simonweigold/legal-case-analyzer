@@ -13,7 +13,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["node", "react", "react-dom"],
+  "types": ["node", "react", "react-dom", "vite/client"],
     "allowSyntheticDefaultImports": true,
     "noEmit": true
   },
@@ -22,6 +22,8 @@
     "dist",
     "node_modules",
     "tailwind.config.js",
-    "postcss.config.js"
+  "postcss.config.js",
+  "src/hooks/useTheme_old.ts"
+  ,"src/index.tsx"
   ]
 }
