@@ -5,8 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
-from schemas.chat import ChatRequest, ChatResponse, StreamChatRequest, ChatHistory
-from schemas.conversation import ChatRequestWithConversation, ChatResponseWithConversation, ConversationResponse, MessageResponse
+from schemas.conversation import ChatRequestWithConversation, ChatResponseWithConversation  # conversation models only
 from auth.auth import current_active_user
 from models.database import User
 from database.database import get_async_session, async_session_maker
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 model = None
 tools_by_name = None
 # Temporary flag to disable all LLM tool usage (simple answers only)
-DISABLE_LLM_TOOLS = True
+DISABLE_LLM_TOOLS = False  # Re-enabled for welcome tool usage
 
 
 def set_model_and_tools(llm_model, tools_dict):
@@ -230,33 +229,60 @@ async def stream_chat_with_conversation(
                     available_tools = {name: tool for name, tool in tools_by_name.items() if name in request.tools}
                     logger.info(f"Filtered to {len(available_tools)} tools: {list(available_tools.keys())}")
                 
-                # Stream directly from the model for token-by-token streaming
+                # First non-stream invocation to check for tool calls
+                logger.info("Invoking model to detect potential tool calls...")
+                initial_response = active_model.invoke(messages_for_llm)
+
+                tool_messages = []
+                if hasattr(initial_response, 'tool_calls') and initial_response.tool_calls:
+                    logger.info(f"Detected {len(initial_response.tool_calls)} tool calls: {[tc['name'] for tc in initial_response.tool_calls]}")
+                    for tc in initial_response.tool_calls:
+                        tool_name = tc.get('name')
+                        tool_args = tc.get('args', {})
+                        tool_id = tc.get('id')
+                        if tool_name in available_tools:
+                            try:
+                                result = available_tools[tool_name].invoke(tool_args)
+                                result_str = json.dumps(result) if not isinstance(result, str) else result
+                                tool_msg = ToolMessage(content=result_str, name=tool_name, tool_call_id=tool_id)
+                                tool_messages.append(tool_msg)
+                                yield f"data: {json.dumps({'type': 'tool', 'content': result_str, 'tool_name': tool_name, 'conversation_id': conversation_id})}\n\n"
+                                logger.info(f"Tool {tool_name} executed successfully")
+                            except Exception as te:
+                                err_content = f"Tool {tool_name} error: {str(te)}"
+                                yield f"data: {json.dumps({'type': 'tool_error', 'content': err_content, 'tool_name': tool_name, 'conversation_id': conversation_id})}\n\n"
+                                logger.error(err_content)
+                        else:
+                            logger.warning(f"Tool {tool_name} not available")
+
+                # Prepare final messages for second pass:
+                # OpenAI requires: assistant message with tool_calls -> tool messages -> follow-up assistant.
+                if getattr(initial_response, 'tool_calls', []):
+                    # Always include the assistant tool-call message first, then tool outputs.
+                    final_messages_for_llm = messages_for_llm + [initial_response] + tool_messages
+                else:
+                    # No tools invoked; just append assistant response.
+                    final_messages_for_llm = messages_for_llm + [initial_response]
+
+                # Stream final response token-by-token
                 accumulated_content = ""
-                logger.info("Starting LLM streaming...")
-                
-                async for chunk in active_model.astream(messages_for_llm):
+                logger.info("Starting final streaming after tool execution (second assistant turn)...")
+                async for chunk in active_model.astream(final_messages_for_llm):
                     if hasattr(chunk, 'content') and chunk.content:
                         accumulated_content += chunk.content
                         yield f"data: {json.dumps({'type': 'chunk', 'content': chunk.content, 'conversation_id': conversation_id})}\n\n"
-                    
-                    # Tool calls disabled (temporarily) -> ignore any tool_calls for simple answers
-                    # if hasattr(chunk, 'tool_calls') and chunk.tool_calls:
-                    #     ... (tool execution disabled)
 
-                # Save the final AI response to database
-                logger.info(f"LLM streaming completed. Total content length: {len(accumulated_content)}")
+                # Save final response
+                logger.info(f"Final streaming completed. Content length: {len(accumulated_content)}")
                 if accumulated_content:
                     await conversation_service.add_message_to_conversation(
                         conversation_id=conversation_id,
                         role="assistant",
                         content=accumulated_content
                     )
-                    logger.info("AI response saved to database")
                 else:
-                    logger.warning("No content accumulated from LLM!")
+                    logger.warning("No content accumulated in final streaming phase")
 
-                # Send completion signal
-                logger.info("Sending completion signal")
                 yield f"data: {json.dumps({'type': 'complete', 'data': {'response': accumulated_content, 'conversation_id': conversation_id, 'message_id': None}})}\n\n"
 
             except Exception as e:
@@ -280,89 +306,6 @@ async def stream_chat_with_conversation(
 
 
 # Legacy endpoints for backward compatibility (using in-memory sessions)
-from services.session import (
-    get_session_messages, 
-    update_session_messages, 
-    clear_session, 
-    get_all_sessions
-)
-
-
-@router.post("/legacy", response_model=ChatResponse)
-async def chat_endpoint_legacy(request: ChatRequest, graph=Depends(get_graph)):
-    """
-    Legacy chat endpoint using session-based storage (backward compatibility).
-    """
-    try:
-        session_id = request.session_id
-        user_message = request.message
-
-        # Get session messages
-        session_messages = get_session_messages(session_id)
-        
-        # Add user message to session history
-        session_messages.append(HumanMessage(content=user_message))
-
-        # Prepare input for the graph with session context
-        inputs = {"messages": session_messages}
-
-        # Run the graph and collect the final response
-        final_state = None
-        for chunk in graph.stream(inputs, stream_mode="values"):
-            final_state = chunk
-
-        if final_state and final_state["messages"]:
-            # Get the last AI message
-            last_message = final_state["messages"][-1]
-            if isinstance(last_message, AIMessage):
-                ai_response = last_message.content
-                
-                # Update session storage with the complete conversation
-                update_session_messages(session_id, final_state["messages"])
-                
-                return ChatResponse(response=ai_response, session_id=session_id)
-            
-        return ChatResponse(response="I apologize, but I couldn't generate a proper response. Please try again.", session_id=session_id)
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
-
-
-@router.get("/history/{session_id}", response_model=ChatHistory)
-async def get_chat_history_legacy(session_id: str):
-    """
-    Legacy chat history endpoint (backward compatibility).
-    """
-    session_messages = get_session_messages(session_id)
-    
-    messages = []
-    for msg in session_messages:
-        if isinstance(msg, HumanMessage):
-            messages.append({"role": "user", "content": msg.content})
-        elif isinstance(msg, AIMessage):
-            messages.append({"role": "assistant", "content": msg.content})
-        elif isinstance(msg, ToolMessage):
-            messages.append({"role": "tool", "content": f"Tool: {msg.name} - {msg.content}"})
-    
-    return ChatHistory(session_id=session_id, messages=messages)
-
-
-@router.delete("/history/{session_id}")
-async def clear_chat_history_legacy(session_id: str):
-    """
-    Legacy clear chat history endpoint (backward compatibility).
-    """
-    clear_session(session_id)
-    return {"message": f"Chat history cleared for session {session_id}"}
-
-
-@router.get("/sessions")
-async def list_sessions_legacy():
-    """
-    Legacy list sessions endpoint (backward compatibility).
-    """
-    sessions = get_all_sessions()
-    return {"sessions": sessions, "count": len(sessions)}
 
 
 # Conversation Management Endpoints

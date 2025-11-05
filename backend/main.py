@@ -78,38 +78,33 @@ async def health_check():
 # Import and setup after app creation to avoid circular imports
 def setup_routes_and_dependencies():
     from langchain_openai import ChatOpenAI
-    from tools.tools import get_tools, get_tools_by_name
-    from tools.streaming_tools import get_streaming_tools, get_streaming_tools_by_name
+    from tools.welcome import welcome_user
+    from tools.private_international_law.precise_jurisdiction import detect_precise_jurisdiction
     from utils.workflow import create_workflow
     from routes.auth import router as auth_router
     from routes.conversations import router as conversations_router
     from routes.chat import router as chat_router, set_model_and_tools
     from routes.tools import router as tools_router
-    
+
     # Initialize the language model
     model = ChatOpenAI(model=settings.MODEL_NAME, streaming=settings.STREAMING)
-    
-    # Setup tools - combine regular and streaming tools
-    regular_tools = get_tools()
-    streaming_tools = get_streaming_tools()
-    all_tools = regular_tools + streaming_tools
-    
-    model = model.bind_tools(all_tools)
-    
-    # Combine tool dictionaries
-    regular_tools_by_name = get_tools_by_name()
-    streaming_tools_by_name = get_streaming_tools_by_name()
-    tools_by_name = {**regular_tools_by_name, **streaming_tools_by_name}
-    
+
+    # Bind only the welcome tool for now
+    model = model.bind_tools([welcome_user, detect_precise_jurisdiction])
+    tools_by_name = {
+        welcome_user.name: welcome_user,
+        detect_precise_jurisdiction.name: detect_precise_jurisdiction
+        }
+
     # Set model and tools for chat routes
     set_model_and_tools(model, tools_by_name)
-    
+
     # Create the workflow graph
     graph = create_workflow(model, tools_by_name)
-    
+
     # Make graph available to routes that need it
     app.state.graph = graph
-    
+
     # Include routes
     app.include_router(auth_router)
     app.include_router(conversations_router)

@@ -54,13 +54,42 @@ def test_basic_functionality():
         print(f"❌ Error in basic functionality test: {e}")
         return False
 
+def test_choice_of_law_extraction_sample():
+    """Smoke test for extract_choice_of_law_section with jurisdiction_type variants."""
+    try:
+        from tools.private_international_law.choice_of_law_extraction.tool import extract_choice_of_law_section
+    except Exception as e:
+        print(f"❌ Unable to import extract_choice_of_law_section: {e}")
+        return False
+
+    sample_text = (
+        "The parties dispute the applicable law. The contract states Swiss law shall govern. "
+        "However, principles of private international law require assessing the closest connection. "
+        "In absence of an effective choice, the law of the seller's habitual residence applies."
+    )
+
+    civil = extract_choice_of_law_section(sample_text, jurisdiction_type="civil law")
+    common = extract_choice_of_law_section(sample_text, jurisdiction_type="common law")
+
+    print("Civil law extraction output (truncated):", civil[:200].replace('\n', ' '))
+    print("Common law extraction output (truncated):", common[:200].replace('\n', ' '))
+
+    # Basic assertions: ensure different prompt paths likely produced content
+    if "jurisdiction type: civil law" in civil.lower() and "jurisdiction type: common law" in common.lower():
+        print("\n✅ Choice of law extraction smoke test passed!")
+        return True
+    else:
+        print("\n⚠️ Choice of law extraction outputs did not contain expected markers.")
+        return False
+
 if __name__ == "__main__":
     print("Legal Case Analyzer - Tools Test")
     print("=" * 40)
     
     success = test_basic_functionality()
+    col_success = test_choice_of_law_extraction_sample()
     
-    if success:
+    if success and col_success:
         print("\n🎉 Tool implementation successful!")
         print("\nNew tools available:")
         print("- detect_legal_system_type: Detects Civil-law vs Common-law jurisdiction")

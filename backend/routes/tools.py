@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from typing import List, Dict, Any
 from tools.tools import get_tools
-from tools.streaming_tools import get_streaming_tools
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
@@ -15,9 +14,7 @@ async def get_available_tools():
         List of tools with name, description, and parameters information
     """
     # Get both regular and streaming tools
-    regular_tools = get_tools()
-    streaming_tools = get_streaming_tools()
-    all_tools = regular_tools + streaming_tools
+    all_tools = get_tools()
     
     tools_metadata = []
     
