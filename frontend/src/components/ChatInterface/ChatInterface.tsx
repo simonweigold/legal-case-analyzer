@@ -1,5 +1,5 @@
 // components/ChatInterface/ChatInterface.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Textarea } from '../ui/textarea';
@@ -97,15 +97,17 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
               {state.messages.map((message, index) => (
                 <div key={index}>
                   {message.role === 'user' && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                      <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    </div>
+                    <UserMessage
+                      index={index}
+                      content={message.content}
+                      isFirstUserMessage={index === 0}
+                    />
                   )}
                   {message.role === 'assistant' && (
                     <div className="space-y-4">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
-                        className="prose prose-sm max-w-none prose-headings:font-serif prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-code:text-pink-600"
+                        className="prose prose-base max-w-none prose-headings:font-serif prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-code:text-pink-600"
                         components={{
                           a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
                             <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline" />
@@ -259,6 +261,79 @@ export function ChatInterface({ state, actions, inputRef, onInitialSubmit }: Cha
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+interface UserMessageProps {
+  index: number;
+  content: string;
+  isFirstUserMessage: boolean;
+}
+
+function UserMessage({ content, isFirstUserMessage }: UserMessageProps) {
+  // Collapsible only for the very first (likely large) court decision text
+  const [expanded, setExpanded] = useState(false);
+
+  const isLarge = useMemo(() => content.length > 1200 || content.split(/\n/).length > 40, [content]);
+  const preview = useMemo(() => {
+    if (!isLarge) return content;
+    // Take first 800 chars or up to first 25 lines, whichever is shorter
+    const lines = content.split(/\n/).slice(0, 25).join('\n');
+    const slice = content.slice(0, 800);
+    // Prefer shorter between line-based and char-based preview to keep it compact
+    return (lines.length < slice.length ? lines : slice).trim();
+  }, [content, isLarge]);
+
+  const shownText = expanded || !isLarge ? content : preview + '\n\n…';
+  const totalWords = useMemo(() => content.trim().split(/\s+/).length, [content]);
+
+  if (!isFirstUserMessage) {
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <p className="leading-relaxed whitespace-pre-wrap">{content}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+      <div className="flex items-start justify-between mb-4 gap-4">
+        <div>
+          <p className="text-sm font-semibold text-blue-800">Court Decision (approx. {totalWords} words)</p>
+          {isLarge && (
+            <p className="text-xs text-blue-700/60 mt-1">{expanded ? 'Full text shown' : 'Preview shown - expand to view entire decision'}</p>
+          )}
+        </div>
+        {isLarge && (
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((v) => !v)}
+            className="text-xs px-2 py-1 rounded border border-blue-300 bg-white/70 hover:bg-white transition font-medium text-blue-700 shadow-sm"
+          >
+            {expanded ? 'Collapse' : 'Show full'}
+          </button>
+        )}
+      </div>
+      <div className={expanded || !isLarge ? '' : 'relative max-h-64 overflow-hidden'}>
+        <p className="leading-relaxed whitespace-pre-wrap">{shownText}</p>
+        {!expanded && isLarge && (
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-blue-50 to-transparent" />
+        )}
+      </div>
+      {isLarge && expanded && (
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => setExpanded(false)}
+            className="text-xs px-2 py-1 rounded border border-blue-300 bg-white/70 hover:bg-white transition font-medium text-blue-700 shadow-sm"
+          >
+            Collapse decision
+          </button>
+        </div>
+      )}
     </div>
   );
 }
