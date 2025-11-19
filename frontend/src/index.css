@@ -173,3 +173,7 @@ body { background: var(--color-background); color: var(--color-foreground); font
   animation: pulse-dot 1.4s ease-in-out infinite;
   animation-delay: 0.4s;
 }
+
+/* Override typography plugin inverted prose paragraphs for higher contrast */
+.prose.prose-invert p { color: var(--color-foreground); }
+

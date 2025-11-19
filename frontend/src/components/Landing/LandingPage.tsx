@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../Navbar';
-import { Button } from '../ui/button';
 import { AuthModal } from '../Auth/AuthModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { Textarea } from '../ui/textarea';
@@ -74,6 +73,7 @@ export const LandingPage: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
       setDragActive(true);
     } else if (e.type === 'dragleave') {
       setDragActive(false);

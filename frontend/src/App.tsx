@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { LandingPage } from './components/Landing/LandingPage';
+import { AboutPage } from './components/About/AboutPage';
 import { ChatInterface } from './components/ChatInterface';
 import { Sidebar } from './components/Sidebar';
 import { ToolSidebar } from './components/ToolSidebar';
@@ -195,6 +196,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/clerk" element={<AppContent />} />
           {/* Legacy support: if someone navigates to /landing redirect to root */}
           <Route path="/landing" element={<Navigate to="/" replace />} />
