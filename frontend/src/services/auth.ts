@@ -26,10 +26,23 @@ export interface AuthResponse {
 }
 
 import { backendConfig } from '../config';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string;
 
 class AuthService {
   private baseUrl = backendConfig.baseUrl;
   private tokenKey = 'legal_analyzer_token';
+  private supabase: SupabaseClient;
+
+  constructor() {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      // Soft fail to avoid crashing UI; backend routes will still work if custom auth is used
+      console.warn('Supabase env missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    }
+    this.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
 
   // Get stored token
   getToken(): string | null {
@@ -67,75 +80,86 @@ class AuthService {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  // Register new user
+  // Register new user via Supabase Auth
   async register(data: RegisterRequest): Promise<AuthUser> {
-  const response = await fetch(`${this.baseUrl}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const { data: signUpData, error } = await this.supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+  // Store display name in user_metadata so it shows in Supabase Auth user object
+  data: data.name ? { name: data.name, full_name: data.name, display_name: data.name } : undefined,
       },
-      body: JSON.stringify(data),
     });
+    if (error) throw new Error(error.message);
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Registration failed');
+    const user = signUpData.user;
+    if (!user) throw new Error('Signup succeeded but no user returned');
+    // If email confirmations are enabled, session may be null until confirmed
+    const session = signUpData.session;
+    if (session?.access_token) this.setToken(session.access_token);
+
+    // Also persist display name to a profiles table if present (common convention)
+    // This requires a `profiles` table with RLS allowing insert/update where id = auth.uid()
+    // Schema example:
+    // create table public.profiles (id uuid primary key references auth.users(id) on delete cascade, full_name text, updated_at timestamptz default now());
+    // policy: with check (auth.uid() = id)
+    if (data.name) {
+      try {
+        await this.supabase.from('profiles').upsert({
+          id: user.id,
+          full_name: data.name,
+        }, { onConflict: 'id' });
+      } catch (e) {
+        console.warn('Profiles upsert failed:', e);
+      }
     }
-
-    return response.json();
+    return {
+      id: user.id,
+      email: user.email ?? '',
+      name: (user.user_metadata as any)?.name,
+      avatar: undefined,
+      is_active: true,
+      is_superuser: false,
+      is_verified: !!user.confirmed_at,
+    };
   }
 
-  // Login user
+  // Login via Supabase email/password
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const formData = new FormData();
-    formData.append('username', data.username);
-    formData.append('password', data.password);
-    formData.append('grant_type', 'password');
-
-  const response = await fetch(`${this.baseUrl}/auth/jwt/login`, {
-      method: 'POST',
-      body: formData,
+    const { data: signInData, error } = await this.supabase.auth.signInWithPassword({
+      email: data.username,
+      password: data.password,
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Login failed');
-    }
-
-    const authResponse = await response.json();
-    this.setToken(authResponse.access_token);
-    return authResponse;
+    if (error) throw new Error(error.message);
+    const token = signInData.session?.access_token;
+    if (!token) throw new Error('No access token returned');
+    this.setToken(token);
+    return { access_token: token, token_type: 'bearer' };
   }
 
-  // Logout user
+  // Logout user (Supabase)
   async logout(): Promise<void> {
     try {
-  await fetch(`${this.baseUrl}/auth/jwt/logout`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
+      await this.supabase.auth.signOut();
     } finally {
       this.clearToken();
     }
   }
 
-  // Get current user info
+  // Get current user info via Supabase; falls back to backend if needed
   async getCurrentUser(): Promise<AuthUser> {
-  const response = await fetch(`${this.baseUrl}/users/me`, {
-      headers: this.getAuthHeaders(),
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        this.clearToken();
-        throw new Error('Authentication expired');
-      }
-      throw new Error('Failed to get user info');
-    }
-
-    return response.json();
+    const { data } = await this.supabase.auth.getUser();
+    const u = data.user;
+    if (!u) throw new Error('Not authenticated');
+    return {
+      id: u.id,
+      email: u.email ?? '',
+      name: (u.user_metadata as any)?.name,
+      avatar: undefined,
+      is_active: true,
+      is_superuser: false,
+      is_verified: !!u.confirmed_at,
+    };
   }
 
   // Update user profile

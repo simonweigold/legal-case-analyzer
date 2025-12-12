@@ -261,3 +261,24 @@ Based on the CoLD (Conflict of Laws Database) project methodology and the SLOP a
 ## 📞 Support
 
 For technical support, legal accuracy improvements, or feature requests, please refer to the project documentation and issue tracking system.
+
+## 🐛 Verbose Debug Logging
+
+Set `VERBOSE_LOGGING=1` when starting the backend to see detailed internal operations:
+
+```bash
+VERBOSE_LOGGING=1 uvicorn backend.main:app --reload --port 8000
+```
+
+You will see:
+- Message arrays passed to the LLM (types, truncated content)
+- Tool binding, each tool call arguments + truncated results
+- Workflow graph chunk keys during non-stream execution
+- Streaming chunk accumulation (length per chunk and total)
+- Line numbers, function names, thread name in each log record
+
+Disable with:
+
+```bash
+unset VERBOSE_LOGGING
+```

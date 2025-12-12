@@ -80,6 +80,8 @@ def setup_routes_and_dependencies():
     from langchain_openai import ChatOpenAI
     from tools.welcome import welcome_user
     from tools.private_international_law.precise_jurisdiction import detect_precise_jurisdiction
+    from tools.private_international_law.legal_system_type import detect_legal_system_type
+    from tools.private_international_law.choice_of_law_extraction import extract_choice_of_law_section
     from utils.workflow import create_workflow
     from routes.auth import router as auth_router
     from routes.conversations import router as conversations_router
@@ -90,10 +92,12 @@ def setup_routes_and_dependencies():
     model = ChatOpenAI(model=settings.MODEL_NAME, streaming=settings.STREAMING)
 
     # Bind only the welcome tool for now
-    model = model.bind_tools([welcome_user, detect_precise_jurisdiction])
+    model = model.bind_tools([welcome_user, detect_precise_jurisdiction, detect_legal_system_type, extract_choice_of_law_section])
     tools_by_name = {
         welcome_user.name: welcome_user,
-        detect_precise_jurisdiction.name: detect_precise_jurisdiction
+        detect_precise_jurisdiction.name: detect_precise_jurisdiction,
+        detect_legal_system_type.name: detect_legal_system_type,
+        extract_choice_of_law_section.name: extract_choice_of_law_section,
         }
 
     # Set model and tools for chat routes

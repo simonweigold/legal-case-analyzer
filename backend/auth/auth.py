@@ -53,3 +53,31 @@ auth_backend = AuthenticationBackend(
 fastapi_users = FastAPIUsers[User, uuid.UUID](get_user_manager, [auth_backend])
 
 current_active_user = fastapi_users.current_user(active=True)
+
+
+# Supabase-based auth dependency for frontend-managed auth
+from typing import Optional as _Optional
+from fastapi import Header as _Header, HTTPException as _HTTPException
+from config import get_supabase_client as _get_supabase_client
+
+class CurrentUser:
+    def __init__(self, id: str, email: _Optional[str] = None):
+        self.id = id
+        self.email = email
+
+def get_current_user(authorization: _Optional[str] = _Header(None)) -> CurrentUser:
+    """
+    Validate Supabase access token (JWT) provided via Authorization: Bearer <token>.
+    Returns CurrentUser with `id` for RLS-scoped queries.
+    """
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise _HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = authorization.split(" ", 1)[1].strip()
+
+    sb_admin = _get_supabase_client(service_role=True)
+    user_resp = sb_admin.auth.get_user(token)
+    if not user_resp or not getattr(user_resp, "user", None):
+        raise _HTTPException(status_code=401, detail="Invalid or expired token")
+
+    user = user_resp.user
+    return CurrentUser(id=user.id, email=getattr(user, "email", None))

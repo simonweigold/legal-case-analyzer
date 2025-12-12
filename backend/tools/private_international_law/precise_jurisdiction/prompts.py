@@ -36,10 +36,10 @@ Do not add explanations or additional text outside the delimiter format in your 
 
 def build_precise_jurisdiction_prompt(text: str) -> str:
 	"""Return the filled prompt with embedded jurisdiction list and truncated text."""
-	print("the prompt is: ", PRECISE_JURISDICTION_DETECTION_PROMPT.format(
-		jurisdiction_list=_JURISDICTION_BULLET_LIST,
-		text=text[:50000]
-	))
+	#print("the prompt is: ", PRECISE_JURISDICTION_DETECTION_PROMPT.format(
+	#	jurisdiction_list=_JURISDICTION_BULLET_LIST,
+	#	text=text[:50000]
+	#))
 	return PRECISE_JURISDICTION_DETECTION_PROMPT.format(
 		jurisdiction_list=_JURISDICTION_BULLET_LIST,
 		text=text[:50000]

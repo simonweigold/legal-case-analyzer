@@ -74,74 +74,46 @@ async def chat_with_conversation(
     Send a message to the AI assistant with conversation management.
     Creates a new conversation if conversation_id is not provided.
     """
-    logger.info(f"Regular chat request from user {user.id}, conversation_id: {request.conversation_id}")
+    logger.info(f"Chat request user={user.id} conv_id={request.conversation_id} msg_len={len(request.message)} tools={request.tools}")
     try:
         conversation_service = ConversationService(db)
-        
+
         # Handle conversation creation or retrieval
         if request.conversation_id is None:
-            # Create new conversation
             title = request.conversation_title or f"Chat {request.message[:30]}..."
-            conversation = await conversation_service.create_conversation(
-                user_id=user.id, 
-                title=title
-            )
+            conversation = await conversation_service.create_conversation(user_id=user.id, title=title)
             conversation_id = conversation.id
         else:
-            # Verify conversation belongs to user
-            conversation = await conversation_service.get_conversation_by_id(
-                request.conversation_id, user.id
-            )
+            conversation = await conversation_service.get_conversation_by_id(request.conversation_id, user.id)
             if not conversation:
                 raise HTTPException(status_code=404, detail="Conversation not found")
             conversation_id = conversation.id
 
-        # Get existing messages from conversation
+        # Existing messages
         db_messages = await conversation_service.get_conversation_messages(conversation_id)
         langchain_messages = await conversation_service.messages_to_langchain_format(db_messages)
-        
-        # Add new user message
-        await conversation_service.add_message_to_conversation(
-            conversation_id=conversation_id,
-            role="user",
-            content=request.message
-        )
+
+        # New user message
+        await conversation_service.add_message_to_conversation(conversation_id=conversation_id, role="user", content=request.message)
         langchain_messages.append(HumanMessage(content=request.message))
 
-        # Prepare input for the graph
+        # Graph run
         inputs = {"messages": langchain_messages}
-
-        # Run the graph and collect the final response
         final_state = None
         for chunk in graph.stream(inputs, stream_mode="values"):
             final_state = chunk
 
-        if final_state and final_state["messages"]:
-            # Get the last AI message
+        if final_state and final_state.get("messages"):
             last_message = final_state["messages"][-1]
             if isinstance(last_message, AIMessage):
                 ai_response = last_message.content
-                
-                # Save AI response to database
-                await conversation_service.add_message_to_conversation(
-                    conversation_id=conversation_id,
-                    role="assistant",
-                    content=ai_response
-                )
-                
-                # Get conversation details for response
-                conversation = await conversation_service.get_conversation_by_id(
-                    conversation_id, user.id
-                )
-                
-                return ChatResponseWithConversation(
-                    response=ai_response, 
-                    conversation_id=conversation_id,
-                    conversation_title=conversation.title
-                )
-            
+                logger.info(f"AI response conv_id={conversation_id} len={len(ai_response)}")
+                await conversation_service.add_message_to_conversation(conversation_id=conversation_id, role="assistant", content=ai_response)
+                conversation = await conversation_service.get_conversation_by_id(conversation_id, user.id)
+                return ChatResponseWithConversation(response=ai_response, conversation_id=conversation_id, conversation_title=conversation.title)
+
+        logger.error("No AIMessage produced for conv_id=%s", conversation_id)
         raise HTTPException(status_code=500, detail="Could not generate response")
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
@@ -155,7 +127,7 @@ async def stream_chat_with_conversation(
     Send a message to the AI assistant with streaming response and conversation management.
     """
     async def generate_stream():
-        logger.info(f"Starting stream for user {user.id}, conversation_id: {request.conversation_id}")
+        logger.info(f"Stream start user={user.id} conv_id={request.conversation_id} msg_len={len(request.message)} tools={request.tools}")
         # Create a new session specifically for this streaming operation
         async with async_session_maker() as db:
             try:
@@ -189,7 +161,6 @@ async def stream_chat_with_conversation(
                 # Get existing messages from conversation
                 logger.info(f"Loading messages for conversation {conversation_id}")
                 db_messages = await conversation_service.get_conversation_messages(conversation_id)
-                logger.info(f"Loaded {len(db_messages)} existing messages")
                 langchain_messages = await conversation_service.messages_to_langchain_format(db_messages)
                 
                 # Add new user message
@@ -207,11 +178,14 @@ async def stream_chat_with_conversation(
                     "CRITICAL INSTRUCTIONS:\n"
                     "- If a user just says 'hello', 'hi', or asks general legal questions, answer using the welcome tool\n"
                     "Be helpful and conversational. Provide legal information from your knowledge and using tools."
+                    "Here is an overview for all tools that you can use: "
+                    f"{', '.join(tools_by_name.keys()) if tools_by_name else 'No tools available'}."
                 )
+                print("system prompt: ", system_prompt)
                 
                 # Prepare messages for streaming
                 messages_for_llm = [system_prompt] + langchain_messages
-                logger.info(f"Prepared {len(messages_for_llm)} messages for LLM")
+                logger.info(f"LLM stream prepared conv_id={conversation_id} message_count={len(messages_for_llm)}")
                 
                 # Check if model is available
                 if model is None:
@@ -230,20 +204,21 @@ async def stream_chat_with_conversation(
                     logger.info(f"Filtered to {len(available_tools)} tools: {list(available_tools.keys())}")
                 
                 # First non-stream invocation to check for tool calls
-                logger.info("Invoking model to detect potential tool calls...")
                 initial_response = active_model.invoke(messages_for_llm)
 
                 tool_messages = []
                 if hasattr(initial_response, 'tool_calls') and initial_response.tool_calls:
-                    logger.info(f"Detected {len(initial_response.tool_calls)} tool calls: {[tc['name'] for tc in initial_response.tool_calls]}")
+                    logger.info(f"Tool calls detected count={len(initial_response.tool_calls)} names={[tc['name'] for tc in initial_response.tool_calls]}")
                     for tc in initial_response.tool_calls:
                         tool_name = tc.get('name')
                         tool_args = tc.get('args', {})
                         tool_id = tc.get('id')
                         if tool_name in available_tools:
                             try:
+                                logger.info(f"Tool invoke name={tool_name} conv_id={conversation_id} args={tool_args}")
                                 result = available_tools[tool_name].invoke(tool_args)
                                 result_str = json.dumps(result) if not isinstance(result, str) else result
+                                logger.info(f"Tool result name={tool_name} len={len(result_str)}")
                                 tool_msg = ToolMessage(content=result_str, name=tool_name, tool_call_id=tool_id)
                                 tool_messages.append(tool_msg)
                                 yield f"data: {json.dumps({'type': 'tool', 'content': result_str, 'tool_name': tool_name, 'conversation_id': conversation_id})}\n\n"
@@ -266,14 +241,14 @@ async def stream_chat_with_conversation(
 
                 # Stream final response token-by-token
                 accumulated_content = ""
-                logger.info("Starting final streaming after tool execution (second assistant turn)...")
+                logger.info("LLM second pass streaming start conv_id=%s", conversation_id)
                 async for chunk in active_model.astream(final_messages_for_llm):
                     if hasattr(chunk, 'content') and chunk.content:
                         accumulated_content += chunk.content
                         yield f"data: {json.dumps({'type': 'chunk', 'content': chunk.content, 'conversation_id': conversation_id})}\n\n"
 
                 # Save final response
-                logger.info(f"Final streaming completed. Content length: {len(accumulated_content)}")
+                logger.info(f"LLM streaming complete conv_id={conversation_id} total_len={len(accumulated_content)}")
                 if accumulated_content:
                     await conversation_service.add_message_to_conversation(
                         conversation_id=conversation_id,

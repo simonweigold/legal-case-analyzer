@@ -35,6 +35,10 @@ class Settings:
     
     # Database Configuration
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./legal_analyzer.db")
+    # Supabase configuration
+    SUPABASE_URL = os.getenv("SUPABASE_URL")
+    SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+    SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     
     # Authentication Configuration
     SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
@@ -44,3 +48,15 @@ class Settings:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 settings = Settings()
+
+# Supabase client factory
+def get_supabase_client(service_role: bool = False):
+    url = settings.SUPABASE_URL
+    key = settings.SUPABASE_SERVICE_ROLE_KEY if service_role and settings.SUPABASE_SERVICE_ROLE_KEY else settings.SUPABASE_ANON_KEY
+    if not url or not key:
+        raise ValueError("Supabase configuration missing: SUPABASE_URL and key must be set")
+    try:
+        from supabase import create_client  # type: ignore
+    except Exception as e:
+        raise RuntimeError("supabase-py is not installed. Add it to backend/requirements.txt and install.") from e
+    return create_client(url, key)
